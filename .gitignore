@@ -1,0 +1,10 @@
+/dist/
+*.zip
+.claude/
+.DS_Store
+._*
+
+# local-only dev module (self-update) + its build script — never in the public repo
+/dev/
+/build-dev.sh
+includes/class-pp-updater.php

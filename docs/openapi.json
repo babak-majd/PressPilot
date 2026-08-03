@@ -1,0 +1,1817 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PressPilot API",
+    "description": "Secure REST API to build and manage a WordPress site with native Gutenberg blocks or Elementor (Pro), migrate Elementor \u2192 Gutenberg in place, and manage menus, plugins, block-theme (FSE) templates, global styles/CSS, themes and site options. Each route belongs to a capability scope the admin can toggle on the Permissions screen (a disabled scope returns 403 pp_scope_disabled). Auth: send the API key as the `X-PressPilot-Key` header on every request (public endpoints excepted). See the agent Skill at `/skill`.",
+    "version": "0.0.0",
+    "contact": {
+      "name": "PressPilot",
+      "url": "https://presspilot.dev"
+    },
+    "license": {
+      "name": "GPL-2.0-or-later"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://SITE/wp-json/presspilot/v1",
+      "description": "This site"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Diagnostics"
+    },
+    {
+      "name": "Content"
+    },
+    {
+      "name": "Gutenberg"
+    },
+    {
+      "name": "Elementor"
+    },
+    {
+      "name": "Media"
+    },
+    {
+      "name": "Menus"
+    },
+    {
+      "name": "Plugins"
+    },
+    {
+      "name": "FSE"
+    },
+    {
+      "name": "Styles"
+    },
+    {
+      "name": "Site"
+    },
+    {
+      "name": "Docs"
+    }
+  ],
+  "paths": {
+    "/ping": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "plugin": "presspilot",
+                  "version": "1.3.7",
+                  "time": "2026-07-31 12:00:00"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/site": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Site & environment info",
+        "description": "WP/PHP versions, active theme, Elementor + Pro status, whether the flexbox container experiment is on, and the plugin list. Call first each session.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content": {
+      "get": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "List pages/posts",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "page"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "any"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ContentSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Create a page or post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentWrite"
+              },
+              "example": {
+                "type": "page",
+                "title": "Landing",
+                "slug": "landing",
+                "status": "publish",
+                "page_template": "full_width",
+                "elementor_data": [
+                  {
+                    "elType": "container",
+                    "settings": {
+                      "content_width": "full"
+                    },
+                    "elements": [
+                      {
+                        "elType": "widget",
+                        "widgetType": "heading",
+                        "settings": {
+                          "title": "Hello",
+                          "align": "center"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "elementor_settings": {
+                  "hide_title": "yes",
+                  "custom_css": ".x{color:red}"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentFull"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Get one item (with parsed elementor_data)",
+        "responses": {
+          "200": {
+            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentFull"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Update an item (only fields you send change)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentFull"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Trash (or permanently delete) an item",
+        "parameters": [
+          {
+            "name": "force",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "example": {
+                  "deleted": true,
+                  "forced": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets": {
+      "get": {
+        "tags": [
+          "Elementor"
+        ],
+        "summary": "List registered Elementor widgets",
+        "responses": {
+          "200": {
+            "description": "Widgets",
+            "content": {
+              "application/json": {
+                "example": {
+                  "widgets": [
+                    {
+                      "name": "heading",
+                      "title": "Heading",
+                      "categories": [
+                        "basic"
+                      ],
+                      "is_pro": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets/{name}": {
+      "parameters": [
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Elementor"
+        ],
+        "summary": "Simplified control schema for one widget",
+        "responses": {
+          "200": {
+            "description": "Controls",
+            "content": {
+              "application/json": {
+                "example": {
+                  "name": "heading",
+                  "title": "Heading",
+                  "controls": [
+                    {
+                      "name": "title",
+                      "type": "text",
+                      "default": ""
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/globals": {
+      "get": {
+        "tags": [
+          "Elementor"
+        ],
+        "summary": "Active Kit global colors & typography",
+        "responses": {
+          "200": {
+            "description": "Globals"
+          }
+        }
+      }
+    },
+    "/templates": {
+      "get": {
+        "tags": [
+          "Elementor"
+        ],
+        "summary": "List Elementor library templates (id, title, type)",
+        "responses": {
+          "200": {
+            "description": "Templates"
+          }
+        }
+      }
+    },
+    "/template": {
+      "post": {
+        "tags": [
+          "Elementor"
+        ],
+        "summary": "Create/update a Theme Builder part (header/footer/single-post/loop-item)",
+        "description": "Sets the template type + taxonomy, saves elementor_data, and (for header/footer/single) assigns display conditions and regenerates the Theme Builder conditions cache.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateWrite"
+              },
+              "example": {
+                "slug": "site-header",
+                "title": "Site Header",
+                "template_type": "header",
+                "conditions": [
+                  "include/general"
+                ],
+                "elementor_data": [
+                  {
+                    "elType": "container",
+                    "settings": {},
+                    "elements": []
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Template",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": 18,
+                  "type": "header",
+                  "conditions": [
+                    "include/general"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/media": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "List recent image attachments",
+        "parameters": [
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Sideload an image from a URL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "alt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attachment",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": 8,
+                  "url": "https://SITE/wp-content/uploads/2026/07/image.png"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/taxonomies": {
+      "get": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Public taxonomies + terms",
+        "responses": {
+          "200": {
+            "description": "Taxonomies"
+          }
+        }
+      }
+    },
+    "/menus": {
+      "get": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Navigation menus",
+        "responses": {
+          "200": {
+            "description": "Menus"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Create (or reuse by name) a menu with items and locations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenuWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Menu"
+          }
+        }
+      }
+    },
+    "/themes": {
+      "get": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Installed themes",
+        "responses": {
+          "200": {
+            "description": "Themes"
+          }
+        }
+      }
+    },
+    "/themes/activate": {
+      "post": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Activate a theme (install from wordpress.org if missing)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "slug"
+                ],
+                "properties": {
+                  "slug": {
+                    "type": "string"
+                  },
+                  "install": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              },
+              "example": {
+                "slug": "hello-elementor",
+                "install": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Activated"
+          }
+        }
+      }
+    },
+    "/homepage": {
+      "get": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Read front-page config",
+        "responses": {
+          "200": {
+            "description": "Homepage"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Set a static front page",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "page_id"
+                ],
+                "properties": {
+                  "page_id": {
+                    "type": "integer"
+                  },
+                  "posts_page_id": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Homepage"
+          }
+        }
+      }
+    },
+    "/settings/options": {
+      "post": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Set allowlisted site options",
+        "description": "Allowlisted keys include permalink_structure, elementor_google_fonts, WPLANG, date_format, blogname, blogdescription, plus the special key `admin_locale` (keeps the admin UI in one locale while the front-end uses another).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "options": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "example": {
+                "options": {
+                  "permalink_structure": "/%postname%/",
+                  "elementor_google_fonts": "0",
+                  "WPLANG": "",
+                  "admin_locale": "fa_IR"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied",
+            "content": {
+              "application/json": {
+                "example": {
+                  "applied": {
+                    "permalink_structure": "/%postname%/"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/skill": {
+      "get": {
+        "tags": [
+          "Docs"
+        ],
+        "summary": "Agent Skill (markdown). Public.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "markdown"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": [
+          "Docs"
+        ],
+        "summary": "This OpenAPI document. Public.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OpenAPI spec"
+          }
+        }
+      }
+    },
+    "/scopes": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Capability groups: which are enabled and the endpoints each gates (self-documenting permissions).",
+        "responses": {
+          "200": {
+            "description": "Scopes, endpoints gated, and always-available routes"
+          }
+        }
+      }
+    },
+    "/migration-status": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Elementor \u2192 Gutenberg migration completion check.",
+        "description": "fully_migrated is true only when no content is in Elementor builder mode, no elementor_library entries remain, and the Elementor plugin is deactivated. Includes leftover items and next_steps.",
+        "responses": {
+          "200": {
+            "description": "Migration status report"
+          }
+        }
+      }
+    },
+    "/performance": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Site-speed diagnostics + recommendations.",
+        "description": "Separates page-weight problems (inline CSS, base64 fonts, HTML size) from server problems (TTFB, opcache off, no object/page cache, no gzip, autoloaded-option bloat). Returns prioritized recommendations.",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "URL to profile (default: home page)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Performance report"
+          }
+        }
+      }
+    },
+    "/assets": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "List files in the presspilot-assets folder.",
+        "responses": {
+          "200": {
+            "description": "Assets"
+          }
+        }
+      }
+    },
+    "/assets/upload": {
+      "post": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Write a base64 asset (font/CSS/SVG/image) to uploads and return its URL.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "filename",
+                  "base64"
+                ],
+                "properties": {
+                  "filename": {
+                    "type": "string",
+                    "description": "e.g. inter-400.woff2"
+                  },
+                  "base64": {
+                    "type": "string",
+                    "description": "Base64 file bytes (data: URI prefix tolerated)."
+                  },
+                  "subdir": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ url, bytes, mime, sha1 }"
+          },
+          "415": {
+            "description": "Disallowed file type"
+          }
+        }
+      }
+    },
+    "/batch": {
+      "post": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Run up to 25 sub-requests against this namespace in one call.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "requests"
+                ],
+                "properties": {
+                  "requests": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "path"
+                      ],
+                      "properties": {
+                        "method": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "body": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ results:[{status,body}] }"
+          }
+        }
+      }
+    },
+    "/cleanup/elementor-meta": {
+      "post": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Purge lingering _elementor_* postmeta.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revisions_only": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ removed_rows, posts_with_elementor_meta }"
+          }
+        }
+      }
+    },
+    "/forms/submit": {
+      "post": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Public contact-form submit \u2192 wp_mail (honeypot + rate limit).",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fields": {
+                    "type": "object",
+                    "description": "label => value map (or send a flat map)."
+                  },
+                  "_t": {
+                    "type": "integer",
+                    "description": "Render timestamp (min-fill-time check)."
+                  },
+                  "pp_hp": {
+                    "type": "string",
+                    "description": "Honeypot \u2014 must be empty."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ sent:true, message }"
+          },
+          "429": {
+            "description": "Rate limited / too fast"
+          }
+        }
+      }
+    },
+    "/forms/config": {
+      "get": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Read form config.",
+        "responses": {
+          "200": {
+            "description": "Config"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Site"
+        ],
+        "summary": "Set form recipient / subject / success / rate limits.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipient": {
+                    "type": "string"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "success": {
+                    "type": "string"
+                  },
+                  "min_seconds": {
+                    "type": "integer"
+                  },
+                  "rate_per_hour": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Config"
+          }
+        }
+      }
+    },
+    "/blocks": {
+      "get": {
+        "tags": [
+          "Gutenberg"
+        ],
+        "summary": "List registered block types (native + plugin).",
+        "responses": {
+          "200": {
+            "description": "Block types"
+          }
+        }
+      }
+    },
+    "/patterns": {
+      "get": {
+        "tags": [
+          "Gutenberg"
+        ],
+        "summary": "List registered block patterns.",
+        "responses": {
+          "200": {
+            "description": "Patterns"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Gutenberg"
+        ],
+        "summary": "Register a reusable synced pattern (wp_block).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "blocks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BlockNode"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created; includes a wp:block ref"
+          }
+        }
+      }
+    },
+    "/menus/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Read a menu with its items and locations.",
+        "responses": {
+          "200": {
+            "description": "Menu"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Update a menu (rename, replace/append items, reassign locations).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenuWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Menu"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Delete a menu.",
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/menu-locations": {
+      "get": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Theme menu locations and their assignments.",
+        "responses": {
+          "200": {
+            "description": "Locations"
+          }
+        }
+      }
+    },
+    "/plugins": {
+      "get": {
+        "tags": [
+          "Plugins"
+        ],
+        "summary": "List installed plugins.",
+        "responses": {
+          "200": {
+            "description": "Plugins"
+          }
+        }
+      }
+    },
+    "/plugins/install": {
+      "post": {
+        "tags": [
+          "Plugins"
+        ],
+        "summary": "Install a plugin from a wordpress.org slug or a base64 zip.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "description": "wordpress.org repo slug."
+                  },
+                  "zip": {
+                    "type": "string",
+                    "description": "Base64 of a plugin zip."
+                  },
+                  "activate": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Install result"
+          }
+        }
+      }
+    },
+    "/plugins/{action}": {
+      "parameters": [
+        {
+          "name": "action",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "activate",
+              "deactivate",
+              "delete"
+            ]
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Plugins"
+        ],
+        "summary": "Activate / deactivate / delete a plugin (by slug or file).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string"
+                  },
+                  "file": {
+                    "type": "string",
+                    "description": "Plugin file, e.g. elementor/elementor.php."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "409": {
+            "description": "Refused (e.g. self-protection)"
+          }
+        }
+      }
+    },
+    "/fse-templates": {
+      "get": {
+        "tags": [
+          "FSE"
+        ],
+        "summary": "List customized wp_template posts for the active block theme.",
+        "responses": {
+          "200": {
+            "description": "Templates"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FSE"
+        ],
+        "summary": "Create/update a wp_template (index, single, archive, \u2026).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FseWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upserted"
+          }
+        }
+      }
+    },
+    "/fse-template-parts": {
+      "get": {
+        "tags": [
+          "FSE"
+        ],
+        "summary": "List wp_template_part posts (header/footer).",
+        "responses": {
+          "200": {
+            "description": "Parts"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FSE"
+        ],
+        "summary": "Create/update a wp_template_part (set area: header/footer).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FseWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upserted"
+          }
+        }
+      }
+    },
+    "/global-styles": {
+      "get": {
+        "tags": [
+          "Styles"
+        ],
+        "summary": "Read the block theme's user global styles (theme.json) + custom CSS.",
+        "responses": {
+          "200": {
+            "description": "Global styles"
+          },
+          "409": {
+            "description": "Not a block theme"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Styles"
+        ],
+        "summary": "Merge settings/styles/css into the block theme's global styles.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "settings": {
+                    "type": "object"
+                  },
+                  "styles": {
+                    "type": "object"
+                  },
+                  "css": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      }
+    },
+    "/settings/custom-css": {
+      "get": {
+        "tags": [
+          "Styles"
+        ],
+        "summary": "Read the Customizer Additional CSS for the active theme.",
+        "responses": {
+          "200": {
+            "description": "CSS"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Styles"
+        ],
+        "summary": "Set the Customizer Additional CSS (KSES-free global CSS + base64 fonts).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "css"
+                ],
+                "properties": {
+                  "css": {
+                    "type": "string"
+                  },
+                  "append": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-PressPilot-Key"
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "Not found",
+        "content": {
+          "application/json": {
+            "example": {
+              "code": "pp_not_found",
+              "message": "Content not found.",
+              "data": {
+                "status": 404
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "SiteInfo": {
+        "type": "object",
+        "properties": {
+          "site_url": {
+            "type": "string"
+          },
+          "wp_version": {
+            "type": "string"
+          },
+          "php_version": {
+            "type": "string"
+          },
+          "active_theme": {
+            "type": "object"
+          },
+          "elementor": {
+            "type": "object"
+          },
+          "elementor_pro": {
+            "type": "object"
+          },
+          "container_experiment": {
+            "type": "boolean"
+          },
+          "plugins": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ElementorNode": {
+        "type": "object",
+        "properties": {
+          "elType": {
+            "type": "string",
+            "enum": [
+              "container",
+              "section",
+              "column",
+              "widget"
+            ]
+          },
+          "widgetType": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ElementorNode"
+            }
+          }
+        }
+      },
+      "BlockNode": {
+        "type": "object",
+        "required": [
+          "blockName"
+        ],
+        "properties": {
+          "blockName": {
+            "type": "string",
+            "description": "e.g. core/paragraph, core/heading, core/group, core/columns."
+          },
+          "attrs": {
+            "type": "object",
+            "description": "Block attributes (JSON)."
+          },
+          "innerHTML": {
+            "type": "string",
+            "description": "Saved HTML for this block (leaf/simple blocks)."
+          },
+          "innerContentOpen": {
+            "type": "string",
+            "description": "Wrapper opening markup for a container block; children serialize between open/close. e.g. '<div class=\"wp-block-group\">'."
+          },
+          "innerContentClose": {
+            "type": "string",
+            "description": "Wrapper closing markup, e.g. '</div>'."
+          },
+          "innerBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            }
+          }
+        }
+      },
+      "MenuItem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "page_id": {
+            "type": "integer"
+          },
+          "post_id": {
+            "type": "integer"
+          },
+          "category_id": {
+            "type": "integer"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MenuItem"
+            }
+          }
+        }
+      },
+      "MenuWrite": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "append": {
+            "type": "boolean",
+            "description": "On update: append items instead of replacing."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MenuItem"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Theme location slugs to assign."
+          }
+        }
+      },
+      "FseWrite": {
+        "type": "object",
+        "required": [
+          "slug"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "e.g. header, footer, index, single, archive."
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "header",
+              "footer",
+              "sidebar",
+              "uncategorized"
+            ],
+            "description": "wp_template_part only."
+          },
+          "content": {
+            "type": "string",
+            "description": "Raw block markup."
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            }
+          }
+        }
+      },
+      "ContentWrite": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "default": "page"
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "publish",
+              "draft",
+              "pending",
+              "private"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "Raw block markup / HTML for post_content (trusted by default)."
+          },
+          "blocks": {
+            "type": "array",
+            "description": "Structured Gutenberg block tree, serialized server-side to block markup. Takes priority over 'content'.",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            }
+          },
+          "builder": {
+            "type": "string",
+            "description": "'gutenberg' (or 'block') detaches the post from Elementor before writing \u2014 in-place migration.",
+            "enum": [
+              "gutenberg",
+              "block",
+              "elementor"
+            ]
+          },
+          "clear_elementor": {
+            "type": "boolean",
+            "description": "Remove all Elementor meta and reset the page template (same effect as builder=gutenberg)."
+          },
+          "allow_unfiltered_html": {
+            "type": "boolean",
+            "description": "Default true (API-key gated trusted write; <style>/SVG survive). Set false to force classic KSES filtering."
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "page_template": {
+            "type": "string",
+            "enum": [
+              "canvas",
+              "full_width",
+              "default"
+            ]
+          },
+          "elementor_data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ElementorNode"
+            }
+          },
+          "elementor_settings": {
+            "type": "object",
+            "properties": {
+              "hide_title": {
+                "type": "string"
+              },
+              "custom_css": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ContentSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "is_elementor": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ContentFull": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ContentSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "content_raw": {
+                "type": "string"
+              },
+              "elementor_data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ElementorNode"
+                }
+              },
+              "elementor_settings": {
+                "type": "object"
+              }
+            }
+          }
+        ]
+      },
+      "TemplateWrite": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "template_type": {
+            "type": "string",
+            "enum": [
+              "header",
+              "footer",
+              "single-post",
+              "loop-item",
+              "archive"
+            ]
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "include/general"
+            ]
+          },
+          "elementor_data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ElementorNode"
+            }
+          },
+          "elementor_settings": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
