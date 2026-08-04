@@ -1,5 +1,5 @@
 === PressPilot ===
-Contributors: baabakmajd
+Contributors: babak-majd
 Donate link: https://bobclub.ir/coffee
 Tags: gutenberg, rest-api, ai, automation, block-editor
 Requires at least: 5.8
