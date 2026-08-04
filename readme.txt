@@ -1,5 +1,6 @@
 === PressPilot ===
 Contributors: baabakmajd
+Donate link: https://bobclub.ir/coffee
 Tags: gutenberg, rest-api, ai, automation, block-editor
 Requires at least: 5.8
 Tested up to: 7.0
@@ -29,7 +30,9 @@ Features:
 * Safety controls: master API on/off switch and an optional IP/CIDR allow-list.
 
 Licensed GPL-2.0-or-later (WordPress-compatible). Free to use. If it saves you time,
-buy the developer a beer 🍺: https://www.buymeacoffee.com/baabakmajd
+buy me a coffee ☕: https://bobclub.ir/coffee
+
+Site: https://bobclub.ir · Telegram: https://t.me/bob_club
 
 == Installation ==
 

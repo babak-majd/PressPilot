@@ -5,8 +5,8 @@
     "description": "Secure REST API to build and manage a WordPress site with native Gutenberg blocks or Elementor (Pro), migrate Elementor \u2192 Gutenberg in place, and manage menus, plugins, block-theme (FSE) templates, global styles/CSS, themes and site options. Each route belongs to a capability scope the admin can toggle on the Permissions screen (a disabled scope returns 403 pp_scope_disabled). Auth: send the API key as the `X-PressPilot-Key` header on every request (public endpoints excepted). See the agent Skill at `/skill`.",
     "version": "0.0.0",
     "contact": {
-      "name": "PressPilot",
-      "url": "https://presspilot.dev"
+      "name": "PressPilot \u2014 Baabak Majd",
+      "url": "https://bobclub.ir"
     },
     "license": {
       "name": "GPL-2.0-or-later"

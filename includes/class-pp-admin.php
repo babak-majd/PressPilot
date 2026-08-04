@@ -246,7 +246,9 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 
 			<p class="pp-tag" style="margin-top:6px">
 				<?php echo esc_html( $product ); ?> v<?php echo esc_html( defined( 'PP_VERSION' ) ? PP_VERSION : '' ); ?> · GPL-2.0-or-later ·
-				Enjoying it? <a href="https://www.buymeacoffee.com/baabakmajd" target="_blank" rel="noopener">Buy the developer a beer 🍺</a>
+				<a href="https://bobclub.ir" target="_blank" rel="noopener">bobclub.ir</a> ·
+				<a href="https://t.me/bob_club" target="_blank" rel="noopener">Telegram</a> ·
+				Enjoying it? <a href="https://bobclub.ir/coffee" target="_blank" rel="noopener">Buy me a coffee ☕</a>
 			</p>
 		</div>
 		<?php
