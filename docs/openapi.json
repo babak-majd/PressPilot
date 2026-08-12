@@ -1644,6 +1644,10 @@
           "slug": {
             "type": "string"
           },
+          "parent": {
+            "type": "integer",
+            "description": "Parent page ID. Nests the page so its URL becomes /{parent-slug}/{slug}/ — e.g. a language subdirectory /fa/faq/."
+          },
           "status": {
             "type": "string",
             "enum": [

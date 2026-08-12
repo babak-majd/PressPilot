@@ -200,7 +200,52 @@ permalinks — `POST /settings/options { "options": { "permalink_structure":
 
 If the site locale is RTL but the design is LTR (or vice-versa), wrap page content in
 a container with `dir` and `direction` set, or force it in Custom CSS. Don't rely on
-the site default.
+the site default. For a full second language see **§8b**.
+
+## 8b. Multilingual sites (dependency-free — no i18n plugin)
+
+Page-builder i18n plugins (Polylang/WPML) **can't be fully driven through this API** —
+defining languages and linking translations need wp-admin. The route an agent *can* fully
+build here is a **per-language page tree under a subdirectory** plus a small client-side
+switcher — which is also the cleanest URL structure for SEO.
+
+**1. URL structure = page hierarchy.** Create one page whose slug is the language code
+(e.g. `fa`); it doubles as that language's home at `/fa/`. Create each translated page with
+`parent` set to that page's ID (POST/PUT `/content`), giving `/fa/faq/`, `/fa/contact/`, …
+— mirroring the default tree at `/`, `/faq/`. (A slug can't contain `/`; hierarchy is the
+only native way to nest paths, and it needs no rewrite flush.)
+
+**2. RTL, cleanly.** Author *all* layout CSS with **logical properties** — `margin-inline`,
+`padding-inline`, `inset-inline-start/end`, `text-align:start/end`, `border-inline-start` —
+never `left`/`right`; one stylesheet then mirrors automatically. On RTL pages set
+`dir="rtl" lang="fa"` (bake it onto each section wrapper and/or set it on `<html>` from the
+switcher script). RTL specifics:
+- **Neutralise `letter-spacing` and `text-transform:uppercase`** on RTL text — both break
+  Arabic/Persian glyph joining. Give paragraphs a little more `line-height`.
+- Embed a **local RTL webfont** (`@font-face`, hosted via `POST /assets/upload`) and force it
+  onto any element whose CSS hardcodes a Latin-only font (nav, buttons, footer):
+  `[dir="rtl"] .chrome, [dir="rtl"] .chrome *{font-family:'Vazirmatn',system-ui,sans-serif}`
+  — otherwise Persian falls back to an ugly system font.
+- Keep intentionally-LTR islands (a dashboard mock, code) LTR with `direction:ltr`.
+- If a shared theme wrapper hardcodes `direction:ltr`, override it:
+  `[dir="rtl"] .wrapper{direction:rtl;text-align:right}`.
+
+**3. Switcher + geo-detect (no plugin).** Put a switcher (two links) + a `<script>` in the
+FSE **header** template part (`POST /fse-template-parts` — `<script>` survives there). The
+script maps the current path to its counterpart in the other language (sets switcher hrefs +
+active state), remembers the choice in a cookie, and — if the header/footer is one shared
+template — translates its text/links + sets `dir=rtl` on RTL pages (defer the DOM edits to
+`DOMContentLoaded` so the footer exists). For IP detection on a **Cloudflare**-fronted site,
+fetch the same-origin `/cdn-cgi/trace` (returns `loc=XX`) and, **only on the first visit**
+(no cookie yet), redirect to the matching language — always respecting a later manual choice.
+
+**4. Two constraints when injecting JS/CSS through the API:**
+- WordPress `wp_unslash`es written content, **stripping one level of backslashes** — so use
+  **no backslashes in injected JS** (no regex literals like `/\/+$/`; do the string ops by
+  hand). Re-fetch and `node --check` the live script to confirm it parses.
+- Customizer Additional CSS (`/settings/custom-css`) **HTML-escapes `>` to `&gt;`**, breaking
+  child combinators — use **descendant selectors** there. (Inside a `<style>` in post content
+  or a `core/html` block, `>` is fine.)
 
 ## 9. Everything local
 
