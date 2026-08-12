@@ -143,6 +143,14 @@ class PP_REST {
 		register_rest_route( $ns, '/adapters', $this->route( 'GET', 'adapters_list', 'config' ) );
 		register_rest_route( $ns, '/adapters/(?P<slug>[a-z0-9\-]+)/(?P<action>[a-z0-9\-_]+)', $this->route( 'POST', 'adapters_run', 'config' ) );
 
+		// Reach into any plugin: custom DB tables, admin-ajax handlers, and an opt-in code hatch.
+		register_rest_route( $ns, '/db/tables', $this->route( 'GET', 'db_tables', 'config' ) );
+		register_rest_route( $ns, '/db/describe', $this->route( 'GET', 'db_describe', 'config' ) );
+		register_rest_route( $ns, '/db/select', $this->route( 'POST', 'db_select', 'config' ) );
+		register_rest_route( $ns, '/db/write', $this->route( 'POST', 'db_write', 'config' ) );
+		register_rest_route( $ns, '/admin-ajax', $this->route( 'POST', 'config_admin_ajax', 'config' ) );
+		register_rest_route( $ns, '/exec', $this->route( 'POST', 'config_exec', 'config' ) );
+
 		// Public: the agent Skill / API documentation (no key needed for discovery).
 		register_rest_route( $ns, '/skill', array(
 			'methods'             => 'GET',
@@ -1196,6 +1204,50 @@ class PP_REST {
 			$request['action'],
 			$request->get_param( 'args' ) ?: $request->get_params()
 		) );
+	}
+
+	public function db_tables( $request ) {
+		return rest_ensure_response( PP_DB::tables( array( 'prefix' => $request->get_param( 'prefix' ) ) ) );
+	}
+
+	public function db_describe( $request ) {
+		return rest_ensure_response( PP_DB::describe( (string) $request->get_param( 'table' ) ) );
+	}
+
+	public function db_select( $request ) {
+		return rest_ensure_response( PP_DB::select( array(
+			'table'   => $request->get_param( 'table' ),
+			'columns' => $request->get_param( 'columns' ),
+			'where'   => $request->get_param( 'where' ),
+			'order'   => $request->get_param( 'order' ),
+			'dir'     => $request->get_param( 'dir' ),
+			'limit'   => $request->get_param( 'limit' ),
+			'raw'     => $request->get_param( 'raw' ),
+		) ) );
+	}
+
+	public function db_write( $request ) {
+		return rest_ensure_response( PP_DB::write( array(
+			'op'      => $request->get_param( 'op' ),
+			'table'   => $request->get_param( 'table' ),
+			'data'    => $request->get_param( 'data' ),
+			'where'   => $request->get_param( 'where' ),
+			'dry_run' => filter_var( $request->get_param( 'dry_run' ), FILTER_VALIDATE_BOOLEAN ),
+			'force'   => filter_var( $request->get_param( 'force' ), FILTER_VALIDATE_BOOLEAN ),
+			'limit'   => $request->get_param( 'limit' ),
+		) ) );
+	}
+
+	public function config_admin_ajax( $request ) {
+		return rest_ensure_response( PP_Config::admin_ajax( array(
+			'action' => $request->get_param( 'action' ),
+			'args'   => $request->get_param( 'args' ),
+			'nopriv' => filter_var( $request->get_param( 'nopriv' ), FILTER_VALIDATE_BOOLEAN ),
+		) ) );
+	}
+
+	public function config_exec( $request ) {
+		return rest_ensure_response( PP_Config::exec_php( array( 'code' => $request->get_param( 'code' ) ) ) );
 	}
 
 	private function summary( $post ) {

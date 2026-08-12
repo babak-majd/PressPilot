@@ -298,6 +298,9 @@ Custom CSS, and turn off Elementor's own Google Fonts with
 | GET | `/registered-settings` `/rest-routes` `/discover` | config | learn a plugin's option keys, settings & REST routes |
 | POST | `/proxy` | config | dispatch to any REST route as admin (drive a plugin's own API) |
 | GET | `/adapters` · POST `/adapters/{slug}/{action}` | config | curated plugin connectors (e.g. Polylang add_language) |
+| GET | `/db/tables` `/db/describe` · POST `/db/select` `/db/write` | config | custom plugin tables — read (structured or raw SELECT) / write (dry-run, before-image, core-table guard) |
+| POST | `/admin-ajax` | config | dispatch a `wp_ajax_{action}` handler as admin |
+| POST | `/exec` | config | run PHP (opt-in; `presspilot_allow_exec`) — universal last resort |
 | GET | `/skill` `/openapi` | — | this document / OpenAPI 3.0 spec (public) |
 
 `POST/PUT /content` also accepts `excerpt`, `categories[]`, `tags[]` (posts), `page_template`
@@ -358,6 +361,25 @@ plugin that exposes REST.
 `POST /adapters/polylang/add_language { "locale":"fa_IR", "name":"فارسی", "rtl":1 }`,
 `…/set_post_language { post_id, lang }`, `…/link_translations { translations:{ en:12, fa:34 } }`.
 Only registered actions run, and only when the plugin is active — never arbitrary code.
+
+**Reaching plugins that store config elsewhere** (so "any plugin" is possible):
+- **Custom DB tables** — `GET /db/tables?prefix=<wpdb_prefix>` lists tables + row counts; `GET
+  /db/describe?table=` shows columns; `POST /db/select { table, where:{col:val}, columns, order,
+  limit }` (or `{ raw:"SELECT …" }`, single read-only statement) reads; `POST /db/write { op:
+  insert|update|delete, table, data, where, dry_run, force }` writes — dry-run previews, updates/
+  deletes require a `where`, affected rows are capped and returned as a before-image, and core WP
+  tables are refused (use the typed endpoints) unless `force:true`.
+- **admin-ajax handlers** — `POST /admin-ajax { action, args:{…}, nopriv }` dispatches
+  `wp_ajax_{action}` as admin (for plugins that only persist settings through ajax) and returns the
+  decoded output.
+- **Escape hatch** — `POST /exec { "code": "return get_option('x');" }` runs PHP for the rare plugin
+  with no other surface. **Disabled by default**; enable via the `presspilot_allow_exec` option
+  (`POST /options`) or the `PP_ALLOW_EXEC` constant. Prefer the typed layers above; reserve `/exec`
+  for what they can't reach.
+
+**Decision order for configuring a plugin:** adapter (if one exists) → the plugin's own REST via
+`/proxy` → `/options`/`/meta`/`/terms` (use `/discover` + snapshot/diff to find keys) → `/db/*`
+for custom tables → `/admin-ajax` → `/exec` as the last resort. Always `dry_run` first on writes.
 
 ## 13. Posts, taxonomies & a dynamic blog
 

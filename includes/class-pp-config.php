@@ -442,4 +442,97 @@ class PP_Config {
 			'data'   => $resp->get_data(),
 		);
 	}
+
+	/**
+	 * Dispatch a wp_ajax_{action} handler (as admin), for plugins that only save
+	 * settings through admin-ajax. Populates $_POST/$_REQUEST from args, captures echoed
+	 * output, and tries to decode JSON.
+	 *
+	 * @param array $args { action, args{}, nopriv }
+	 * @return array
+	 */
+	public static function admin_ajax( $args ) {
+		$action = isset( $args['action'] ) ? sanitize_text_field( (string) $args['action'] ) : '';
+		if ( '' === $action ) {
+			return PP_Helpers::error( 'pp_missing_action', 'Provide an ajax "action".', 400 );
+		}
+		$hook = ( ! empty( $args['nopriv'] ) ? 'wp_ajax_nopriv_' : 'wp_ajax_' ) . $action;
+		if ( ! has_action( $hook ) ) {
+			return PP_Helpers::error( 'pp_no_ajax', sprintf( 'No handler registered for %s.', $hook ), 404 );
+		}
+		$payload = isset( $args['args'] ) && is_array( $args['args'] ) ? $args['args'] : array();
+		$prev    = get_current_user_id();
+		$admins  = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
+		if ( ! empty( $admins ) ) {
+			wp_set_current_user( (int) $admins[0] );
+		}
+		$bak_post = $_POST;      // phpcs:ignore
+		$bak_req  = $_REQUEST;   // phpcs:ignore
+		$_POST    = $payload;    // phpcs:ignore
+		$_REQUEST = array_merge( $_REQUEST, $payload ); // phpcs:ignore
+		if ( ! defined( 'DOING_AJAX' ) ) {
+			define( 'DOING_AJAX', true );
+		}
+		ob_start();
+		$out = null;
+		try {
+			do_action( $hook );
+		} catch ( \Throwable $e ) {
+			$out = array( 'exception' => $e->getMessage() );
+		}
+		$echoed = ob_get_clean();
+		$_POST    = $bak_post;   // phpcs:ignore
+		$_REQUEST = $bak_req;    // phpcs:ignore
+		wp_set_current_user( $prev );
+
+		$decoded = json_decode( (string) $echoed, true );
+		return array(
+			'action' => $action,
+			'output' => null !== $decoded ? $decoded : $echoed,
+			'error'  => $out,
+		);
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Universal escape hatch — arbitrary PHP (opt-in, OFF by default)    */
+	/* ------------------------------------------------------------------ */
+
+	const EXEC_OPTION = 'presspilot_allow_exec';
+
+	public static function exec_enabled() {
+		return defined( 'PP_ALLOW_EXEC' ) ? (bool) PP_ALLOW_EXEC : ( '1' === (string) get_option( self::EXEC_OPTION, '0' ) );
+	}
+
+	/**
+	 * Evaluate PHP and return its value + echoed output. Gated: only runs when the admin
+	 * has enabled it (option presspilot_allow_exec = '1', or the PP_ALLOW_EXEC constant).
+	 * The API key already grants plugin-install (i.e. code execution), so this is a
+	 * convenience of equal power, not a new trust boundary — but it stays OFF by default.
+	 *
+	 * @param array $args { code }
+	 * @return array|WP_Error
+	 */
+	public static function exec_php( $args ) {
+		if ( ! self::exec_enabled() ) {
+			return PP_Helpers::error( 'pp_exec_disabled', 'Code execution is disabled. Enable it on the PressPilot Permissions screen (or define PP_ALLOW_EXEC) before using /exec.', 403 );
+		}
+		$code = isset( $args['code'] ) ? (string) $args['code'] : '';
+		if ( '' === $code ) {
+			return PP_Helpers::error( 'pp_no_code', 'Provide "code" (PHP, without opening tags).', 400 );
+		}
+		ob_start();
+		$value = null;
+		$error = null;
+		try {
+			$value = eval( $code ); // phpcs:ignore Squiz.PHP.Eval -- intentional, admin-gated escape hatch.
+		} catch ( \Throwable $e ) {
+			$error = $e->getMessage();
+		}
+		$echoed = ob_get_clean();
+		return array(
+			'return' => $value,
+			'output' => $echoed,
+			'error'  => $error,
+		);
+	}
 }

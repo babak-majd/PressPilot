@@ -5,7 +5,7 @@ Tags: gutenberg, rest-api, ai, automation, block-editor
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,13 @@ Every endpoint requires the secret API key. Keep it private and serve your site 
 regenerate the key at any time from the settings page.
 
 == Changelog ==
+
+= 1.9.0 =
+* **Universal reach** — configure virtually any plugin, whatever it stores config in:
+  * Custom DB tables: GET `/db/tables` `/db/describe`, POST `/db/select` (structured or read-only raw SELECT) and `/db/write` (insert/update/delete) with dry-run, affected-row cap, before-image capture, and a core-table guard.
+  * admin-ajax: POST `/admin-ajax` dispatches a `wp_ajax_{action}` handler as admin (for plugins that only save via ajax) and returns the decoded output.
+  * Escape hatch: POST `/exec` runs PHP — **off by default**, enabled only via the `presspilot_allow_exec` option / `PP_ALLOW_EXEC` constant (equal in power to the plugin-install the key already allows).
+* Together with 1.8.0's options/meta/terms/proxy/discovery/adapters, this covers options, meta, terms, custom tables, a plugin's own REST API, admin-ajax, and (opt-in) arbitrary code.
 
 = 1.8.0 =
 * **Configuration assistant** — PressPilot can now help configure other plugins & the site, not just build content:
