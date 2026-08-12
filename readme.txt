@@ -5,7 +5,7 @@ Tags: gutenberg, rest-api, ai, automation, block-editor
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,9 @@ Every endpoint requires the secret API key. Keep it private and serve your site 
 regenerate the key at any time from the settings page.
 
 == Changelog ==
+
+= 1.7.1 =
+* Content: POST/PUT /content now accepts `parent` (post ID) to build page hierarchy — enables nested URLs like /fa/faq/ for language subdirectories. GET responses now include `parent`.
 
 = 1.7.0 =
 * Assets: POST /assets/upload — host fonts/CSS/SVG as real cacheable files (base64 → uploads), so huge base64 blobs no longer bloat inline CSS.

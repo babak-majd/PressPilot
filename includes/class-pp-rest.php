@@ -392,6 +392,9 @@ class PP_REST {
 		if ( $request->get_param( 'slug' ) ) {
 			$postarr['post_name'] = sanitize_title( $request->get_param( 'slug' ) );
 		}
+		if ( null !== $request->get_param( 'parent' ) ) {
+			$postarr['post_parent'] = (int) $request->get_param( 'parent' );
+		}
 
 		$post_id = $this->insert_post( $postarr, $trusted );
 		if ( is_wp_error( $post_id ) ) {
@@ -517,6 +520,9 @@ class PP_REST {
 		}
 		if ( null !== $request->get_param( 'slug' ) ) {
 			$postarr['post_name'] = sanitize_title( $request->get_param( 'slug' ) );
+		}
+		if ( null !== $request->get_param( 'parent' ) ) {
+			$postarr['post_parent'] = (int) $request->get_param( 'parent' );
 		}
 		if ( count( $postarr ) > 1 ) {
 			$res = $this->update_post( $postarr, $trusted );
@@ -1058,6 +1064,7 @@ class PP_REST {
 			'title'        => get_the_title( $post ),
 			'status'       => $post->post_status,
 			'slug'         => $post->post_name,
+			'parent'       => (int) $post->post_parent,
 			'url'          => get_permalink( $post ),
 			'edit_url'     => get_edit_post_link( $post->ID, 'raw' ),
 			'modified'     => $post->post_modified,

@@ -3,7 +3,7 @@
  * Plugin Name:       PressPilot
  * Plugin URI:        https://bobclub.ir
  * Description:        An AI copilot for WordPress. Exposes a secure REST API and a self-describing agent Skill so an AI agent can build and manage your whole site — pages, posts, blocks, themes, menus, templates, media and site settings.
- * Version:           1.7.0
+ * Version:           1.7.1
  * Author:            Baabak Majd
  * Author URI:        https://bobclub.ir
  * Text Domain:       presspilot
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PP_VERSION', '1.7.0' );
+define( 'PP_VERSION', '1.7.1' );
 define( 'PP_PRODUCT', 'PressPilot' );
 define( 'PP_TAGLINE', 'AI copilot for WordPress' );
 define( 'PP_FILE', __FILE__ );

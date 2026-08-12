@@ -248,7 +248,9 @@ Custom CSS, and turn off Elementor's own Google Fonts with
 | POST | `/template` | templates | create/update an Elementor Theme Builder part |
 | GET | `/skill` `/openapi` | — | this document / OpenAPI 3.0 spec (public) |
 
-`POST/PUT /content` also accepts `excerpt`, `categories[]`, `tags[]` (posts) and `page_template`.
+`POST/PUT /content` also accepts `excerpt`, `categories[]`, `tags[]` (posts), `page_template`
+and `parent` (a page ID — nests the page so its URL becomes `/{parent-slug}/{slug}/`, e.g. a
+language subdirectory `/fa/faq/`).
 A disabled **scope** (see the Permissions screen / `GET /scopes`) returns `403 pp_scope_disabled`.
 
 ## 16. Gutenberg header/footer, menus, global CSS (no Elementor)
