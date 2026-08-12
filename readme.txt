@@ -5,7 +5,7 @@ Tags: gutenberg, rest-api, ai, automation, block-editor
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,15 @@ Every endpoint requires the secret API key. Keep it private and serve your site 
 regenerate the key at any time from the settings page.
 
 == Changelog ==
+
+= 1.8.0 =
+* **Configuration assistant** — PressPilot can now help configure other plugins & the site, not just build content:
+  * Generic state: GET/POST `/options` (read/write any option, by key or prefix), GET/POST `/meta` (post/term/user), POST `/terms` + `/terms/assign`.
+  * Safety: every write auto-creates a restore point; `dry_run` previews the diff; a denylist guards lock-out options; `/config/snapshot`, `/config/diff`, `/config/restore`.
+  * Discovery: `/registered-settings`, `/rest-routes`, and `/discover?slug=` (option keys + registered settings + REST routes for a plugin). Learn any plugin's keys by snapshot → change in wp-admin → diff.
+  * REST passthrough: POST `/proxy` dispatches to any registered REST route (drive a plugin's own API), acting as admin.
+  * Adapters: `/adapters` + `/adapters/{slug}/{action}` — curated, self-describing connectors for plugins that need their own PHP API (ships a Polylang adapter: add_language, set_post_language, link_translations).
+  * New `config` scope on the Permissions screen gates all of the above.
 
 = 1.7.1 =
 * Content: POST/PUT /content now accepts `parent` (post ID) to build page hierarchy — enables nested URLs like /fa/faq/ for language subdirectories. GET responses now include `parent`.

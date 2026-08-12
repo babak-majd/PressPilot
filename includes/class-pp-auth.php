@@ -35,6 +35,7 @@ class PP_Auth {
 		'themes'    => 'Themes (install, activate, switch)',
 		'plugins'   => 'Plugins (install, activate, deactivate, delete)',
 		'settings'  => 'Site settings (options, homepage, permalinks)',
+		'config'    => 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)',
 	);
 
 	/** @var PP_Auth */

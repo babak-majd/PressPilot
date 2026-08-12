@@ -291,6 +291,13 @@ Custom CSS, and turn off Elementor's own Google Fonts with
 | GET/POST | `/homepage` | settings | read / set static front page |
 | POST | `/settings/options` | settings | set allowlisted options (permalinks, google fonts, WPLANG, admin_locale, …) |
 | POST | `/template` | templates | create/update an Elementor Theme Builder part |
+| GET/POST | `/options` | config | read (`keys`/`prefix`) / write (`options`, `dry_run`, `force`) any option; write auto-snapshots |
+| GET/POST | `/meta` | config | read/write post/term/user meta (`type`,`id`,`meta`) |
+| POST | `/terms` · `/terms/assign` | config | create a term (with meta) / assign terms to an object |
+| GET/POST | `/config/snapshot` · GET `/config/diff` · POST `/config/restore` | config | capture options, diff vs now, roll back |
+| GET | `/registered-settings` `/rest-routes` `/discover` | config | learn a plugin's option keys, settings & REST routes |
+| POST | `/proxy` | config | dispatch to any REST route as admin (drive a plugin's own API) |
+| GET | `/adapters` · POST `/adapters/{slug}/{action}` | config | curated plugin connectors (e.g. Polylang add_language) |
 | GET | `/skill` `/openapi` | — | this document / OpenAPI 3.0 spec (public) |
 
 `POST/PUT /content` also accepts `excerpt`, `categories[]`, `tags[]` (posts), `page_template`
@@ -312,6 +319,45 @@ A disabled **scope** (see the Permissions screen / `GET /scopes`) returns `403 p
   at the end of a migration, `POST /plugins/deactivate { "slug":"elementor" }`. (The API refuses
   to deactivate/delete PressPilot itself.)
 
+
+## 12. Configuring plugins & the site (the config assistant)
+
+Beyond building content, PressPilot can read and change **plugin & site configuration** through
+generic primitives + discovery — no per-plugin integration needed for the common cases. Requires
+the **`config`** scope.
+
+**Recommended workflow — discover → preview → snapshot → write → verify:**
+
+1. **Discover what to set.** `GET /discover?slug=<plugin>` (or `?prefix=<option_prefix>`) returns the
+   plugin's option keys, matching registered settings, and its REST routes. `GET /registered-settings`
+   lists every Settings-API setting; `GET /rest-routes?prefix=/<ns>` lists a plugin's own REST API.
+   *If you don't know the option key,* **learn by observation:** `POST /config/snapshot` → ask the
+   user to change the setting once in wp-admin → `GET /config/diff?id=<id>` tells you the exact
+   `option_name` and value that changed.
+2. **Preview.** `POST /options { "options": { … }, "dry_run": true }` returns the before/after diff
+   without writing.
+3. **Write.** `POST /options { "options": { name: value, … } }` — every write auto-creates a
+   **restore point** (`restore_id` in the response). Lock-out options (`siteurl`, `home`,
+   `active_plugins`, `template`, `stylesheet`) are refused unless `force:true`. Secret-looking values
+   are redacted on read unless `reveal:true`.
+4. **Undo if needed.** `POST /config/restore { "id": <restore_id> }`. Manual snapshots:
+   `POST /config/snapshot { "prefix":"woocommerce" }` (or `keys:[…]`, or omit for all autoloaded
+   options); list with `GET /config/snapshot`.
+
+Also: `GET/POST /meta { type:post|term|user, id, … }` for metadata; `POST /terms` +
+`POST /terms/assign` for taxonomy terms (e.g. a plugin that stores config as terms).
+
+**Drive a plugin's own REST API** (WooCommerce, Yoast, …) via `POST /proxy
+{ "method":"GET|POST|…", "path":"/wc/v3/settings", "body":{…} }` — it dispatches the request
+internally **as an administrator** and returns `{status, data}`. This is the cleanest path for any
+plugin that exposes REST.
+
+**Plugins that need their own PHP API** (Polylang, WPML, …) have curated, self-describing
+**adapters**: `GET /adapters` lists them and their actions (and whether the plugin is active);
+`POST /adapters/{slug}/{action}` runs a whitelisted action, e.g.
+`POST /adapters/polylang/add_language { "locale":"fa_IR", "name":"فارسی", "rtl":1 }`,
+`…/set_post_language { post_id, lang }`, `…/link_translations { translations:{ en:12, fa:34 } }`.
+Only registered actions run, and only when the plugin is active — never arbitrary code.
 
 ## 13. Posts, taxonomies & a dynamic blog
 

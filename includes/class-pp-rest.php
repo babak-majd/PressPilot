@@ -125,6 +125,24 @@ class PP_REST {
 		register_rest_route( $ns, '/settings/custom-css', $this->route( 'POST', 'set_custom_css', 'styles' ) );
 		register_rest_route( $ns, '/template', $this->route( 'POST', 'upsert_template', 'templates' ) );
 
+		// Configuration assistant (generic options/meta/terms, snapshots, discovery, REST proxy, adapters).
+		register_rest_route( $ns, '/options', $this->route( 'GET', 'config_get_options', 'config' ) );
+		register_rest_route( $ns, '/options', $this->route( 'POST', 'config_set_options', 'config' ) );
+		register_rest_route( $ns, '/meta', $this->route( 'GET', 'config_get_meta', 'config' ) );
+		register_rest_route( $ns, '/meta', $this->route( 'POST', 'config_set_meta', 'config' ) );
+		register_rest_route( $ns, '/terms', $this->route( 'POST', 'config_create_term', 'config' ) );
+		register_rest_route( $ns, '/terms/assign', $this->route( 'POST', 'config_assign_terms', 'config' ) );
+		register_rest_route( $ns, '/config/snapshot', $this->route( 'GET', 'config_snapshots', 'config' ) );
+		register_rest_route( $ns, '/config/snapshot', $this->route( 'POST', 'config_snapshot', 'config' ) );
+		register_rest_route( $ns, '/config/diff', $this->route( 'GET', 'config_diff', 'config' ) );
+		register_rest_route( $ns, '/config/restore', $this->route( 'POST', 'config_restore', 'config' ) );
+		register_rest_route( $ns, '/registered-settings', $this->route( 'GET', 'config_registered_settings', 'config' ) );
+		register_rest_route( $ns, '/rest-routes', $this->route( 'GET', 'config_rest_routes', 'config' ) );
+		register_rest_route( $ns, '/discover', $this->route( 'GET', 'config_discover', 'config' ) );
+		register_rest_route( $ns, '/proxy', $this->route( 'POST', 'config_proxy', 'config' ) );
+		register_rest_route( $ns, '/adapters', $this->route( 'GET', 'adapters_list', 'config' ) );
+		register_rest_route( $ns, '/adapters/(?P<slug>[a-z0-9\-]+)/(?P<action>[a-z0-9\-_]+)', $this->route( 'POST', 'adapters_run', 'config' ) );
+
 		// Public: the agent Skill / API documentation (no key needed for discovery).
 		register_rest_route( $ns, '/skill', array(
 			'methods'             => 'GET',
@@ -1056,6 +1074,129 @@ class PP_REST {
 	/* ------------------------------------------------------------------ */
 	/* Helpers                                                            */
 	/* ------------------------------------------------------------------ */
+
+	/* ------------------------------------------------------------------ */
+	/* Configuration assistant                                            */
+	/* ------------------------------------------------------------------ */
+
+	public function config_get_options( $request ) {
+		$keys = $request->get_param( 'keys' );
+		return rest_ensure_response( PP_Config::get_options( array(
+			'keys'   => is_array( $keys ) ? $keys : ( $keys ? explode( ',', (string) $keys ) : array() ),
+			'prefix' => (string) $request->get_param( 'prefix' ),
+			'reveal' => filter_var( $request->get_param( 'reveal' ), FILTER_VALIDATE_BOOLEAN ),
+		) ) );
+	}
+
+	public function config_set_options( $request ) {
+		return rest_ensure_response( PP_Config::set_options( array(
+			'options' => $request->get_param( 'options' ),
+			'dry_run' => filter_var( $request->get_param( 'dry_run' ), FILTER_VALIDATE_BOOLEAN ),
+			'force'   => filter_var( $request->get_param( 'force' ), FILTER_VALIDATE_BOOLEAN ),
+			'label'   => (string) $request->get_param( 'label' ),
+		) ) );
+	}
+
+	public function config_get_meta( $request ) {
+		$keys = $request->get_param( 'keys' );
+		return rest_ensure_response( PP_Config::get_meta( array(
+			'type'   => $request->get_param( 'type' ),
+			'id'     => $request->get_param( 'id' ),
+			'keys'   => is_array( $keys ) ? $keys : ( $keys ? explode( ',', (string) $keys ) : array() ),
+			'reveal' => filter_var( $request->get_param( 'reveal' ), FILTER_VALIDATE_BOOLEAN ),
+		) ) );
+	}
+
+	public function config_set_meta( $request ) {
+		return rest_ensure_response( PP_Config::set_meta( array(
+			'type'    => $request->get_param( 'type' ),
+			'id'      => $request->get_param( 'id' ),
+			'meta'    => $request->get_param( 'meta' ),
+			'dry_run' => filter_var( $request->get_param( 'dry_run' ), FILTER_VALIDATE_BOOLEAN ),
+		) ) );
+	}
+
+	public function config_create_term( $request ) {
+		return rest_ensure_response( PP_Config::create_term( array(
+			'taxonomy'    => $request->get_param( 'taxonomy' ),
+			'name'        => $request->get_param( 'name' ),
+			'slug'        => $request->get_param( 'slug' ),
+			'parent'      => $request->get_param( 'parent' ),
+			'description' => $request->get_param( 'description' ),
+			'meta'        => $request->get_param( 'meta' ),
+		) ) );
+	}
+
+	public function config_assign_terms( $request ) {
+		return rest_ensure_response( PP_Config::assign_terms( array(
+			'object_id' => $request->get_param( 'object_id' ),
+			'taxonomy'  => $request->get_param( 'taxonomy' ),
+			'terms'     => $request->get_param( 'terms' ),
+			'append'    => filter_var( $request->get_param( 'append' ), FILTER_VALIDATE_BOOLEAN ),
+		) ) );
+	}
+
+	public function config_snapshot( $request ) {
+		$keys = $request->get_param( 'keys' );
+		return rest_ensure_response( PP_Config::snapshot( array(
+			'keys'   => is_array( $keys ) ? $keys : ( $keys ? explode( ',', (string) $keys ) : array() ),
+			'prefix' => (string) $request->get_param( 'prefix' ),
+			'label'  => (string) $request->get_param( 'label' ),
+		) ) );
+	}
+
+	public function config_snapshots() {
+		return rest_ensure_response( PP_Config::list_snapshots() );
+	}
+
+	public function config_diff( $request ) {
+		return rest_ensure_response( PP_Config::diff( (string) $request->get_param( 'id' ) ) );
+	}
+
+	public function config_restore( $request ) {
+		$keys = $request->get_param( 'keys' );
+		return rest_ensure_response( PP_Config::restore(
+			(string) $request->get_param( 'id' ),
+			is_array( $keys ) ? $keys : ( $keys ? explode( ',', (string) $keys ) : array() )
+		) );
+	}
+
+	public function config_registered_settings() {
+		return rest_ensure_response( PP_Config::registered_settings() );
+	}
+
+	public function config_rest_routes( $request ) {
+		return rest_ensure_response( PP_Config::rest_routes( (string) $request->get_param( 'prefix' ) ) );
+	}
+
+	public function config_discover( $request ) {
+		return rest_ensure_response( PP_Config::discover( array(
+			'slug'   => $request->get_param( 'slug' ),
+			'prefix' => $request->get_param( 'prefix' ),
+		) ) );
+	}
+
+	public function config_proxy( $request ) {
+		return rest_ensure_response( PP_Config::proxy( array(
+			'method'   => $request->get_param( 'method' ),
+			'path'     => $request->get_param( 'path' ),
+			'body'     => $request->get_param( 'body' ),
+			'query'    => $request->get_param( 'query' ),
+			'as_admin' => $request->get_param( 'as_admin' ),
+		) ) );
+	}
+
+	public function adapters_list() {
+		return rest_ensure_response( PP_Adapters::listing() );
+	}
+
+	public function adapters_run( $request ) {
+		return rest_ensure_response( PP_Adapters::run(
+			$request['slug'],
+			$request['action'],
+			$request->get_param( 'args' ) ?: $request->get_params()
+		) );
+	}
 
 	private function summary( $post ) {
 		return array(
