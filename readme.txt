@@ -57,6 +57,7 @@ regenerate the key at any time from the settings page.
   * admin-ajax: POST `/admin-ajax` dispatches a `wp_ajax_{action}` handler as admin (for plugins that only save via ajax) and returns the decoded output.
   * Escape hatch: POST `/exec` runs PHP — **off by default**, enabled only via the `presspilot_allow_exec` option / `PP_ALLOW_EXEC` constant (equal in power to the plugin-install the key already allows).
 * Together with 1.8.0's options/meta/terms/proxy/discovery/adapters, this covers options, meta, terms, custom tables, a plugin's own REST API, admin-ajax, and (opt-in) arbitrary code.
+* Permissions screen: the new `config` scope appears automatically, plus a dedicated (red, off-by-default) **"Allow code execution"** toggle for `/exec`. Full docs: SKILL §12, API.md, and the OpenAPI spec (`/openapi`) now cover every config endpoint.
 
 = 1.8.0 =
 * **Configuration assistant** — PressPilot can now help configure other plugins & the site, not just build content:

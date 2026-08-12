@@ -56,6 +56,10 @@
     },
     {
       "name": "Docs"
+    },
+    {
+      "name": "Config",
+      "description": "Configuration assistant: read/write options, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters; custom DB tables; admin-ajax; opt-in code exec. Scope: config."
     }
   ],
   "paths": {
@@ -1423,6 +1427,531 @@
           }
         }
       }
+    },
+    "/options": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Read options",
+        "description": "By `keys` (csv) and/or `prefix`. Secrets redacted unless reveal=1.",
+        "parameters": [
+          {
+            "name": "keys",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reveal",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Write options",
+        "description": "Body: options{name:value}, dry_run, force, label. Auto-creates a restore point; lock-out options need force.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/meta": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Read post/term/user meta",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "keys",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reveal",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Write meta",
+        "description": "Body: type, id, meta{}, dry_run.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/terms": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Create a term",
+        "description": "Body: taxonomy, name, slug, parent, description, meta{}.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/terms/assign": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Assign terms to an object",
+        "description": "Body: object_id, taxonomy, terms, append.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/config/snapshot": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "List snapshots",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Capture an option snapshot",
+        "description": "Body: keys[]/prefix (or omit for all autoloaded), label.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/config/diff": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Diff current options vs a snapshot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/config/restore": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Restore options from a snapshot",
+        "description": "Body: id, keys[] (optional).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/registered-settings": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "List Settings-API registered settings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/rest-routes": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "List registered REST routes",
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/discover": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Discover a plugin's config surface",
+        "description": "Option keys + registered settings + REST routes.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/proxy": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Dispatch to any REST route as admin",
+        "description": "Body: method, path, body{}, query{}, as_admin. Returns {status,data}.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/adapters": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "List plugin adapters & their actions",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/adapters/{slug}/{action}": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Run a curated adapter action",
+        "description": "e.g. polylang/add_language. Body: args{} (or flat params).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/db/tables": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "List custom DB tables (+ row counts)",
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/db/describe": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Describe a table's columns",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/db/select": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Read rows",
+        "description": "Structured {table,where,columns,order,dir,limit} or {raw:'SELECT \u2026'} (single read-only statement).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/db/write": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Write rows",
+        "description": "Body: op(insert|update|delete), table, data, where, dry_run, force. Update/delete need where; core tables need force; before-image returned.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin-ajax": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Dispatch a wp_ajax_{action} handler as admin",
+        "description": "Body: action, args{}, nopriv.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/exec": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Run PHP (opt-in)",
+        "description": "OFF by default; enable via presspilot_allow_exec / PP_ALLOW_EXEC. Body: code.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1646,7 +2175,7 @@
           },
           "parent": {
             "type": "integer",
-            "description": "Parent page ID. Nests the page so its URL becomes /{parent-slug}/{slug}/ — e.g. a language subdirectory /fa/faq/."
+            "description": "Parent page ID. Nests the page so its URL becomes /{parent-slug}/{slug}/ \u2014 e.g. a language subdirectory /fa/faq/."
           },
           "status": {
             "type": "string",

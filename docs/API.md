@@ -128,6 +128,29 @@ Discovery routes (`/ping`, `/site`, `/scopes`, `/migration-status`, `/globals`, 
 | GET | `/homepage` | Front-page config. |
 | POST | `/homepage` | Set a static front page. Body: `page_id` (required), `posts_page_id` (optional). |
 
+## Configuration assistant (scope `config`)
+Read & change plugin/site configuration — reaches wherever a plugin stores its config.
+Recommended order: **adapter → `/proxy` → `/options`/`/meta`/`/terms` → `/db/*` → `/admin-ajax` → `/exec`**. Always `dry_run` writes first.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/options` | Read options by `keys` (csv) and/or `prefix`. Secrets redacted unless `reveal=1`. |
+| POST | `/options` | Write `options` {name:value}. `dry_run` previews the diff; auto-creates a restore point (`restore_id`); lock-out options need `force`. |
+| GET/POST | `/meta` | Read/write post/term/user meta. Body: `type`, `id`, `meta`, `dry_run`. |
+| POST | `/terms` · `/terms/assign` | Create a term (`taxonomy`, `name`, `slug`, `parent`, `meta`) / assign terms to an `object_id`. |
+| POST | `/config/snapshot` · GET `/config/snapshot` | Capture options (`keys`/`prefix`, or all autoloaded) / list snapshots. |
+| GET | `/config/diff?id=` | What changed since a snapshot (added/changed/removed). |
+| POST | `/config/restore` | Roll options back to a snapshot (`id`, optional `keys`). |
+| GET | `/registered-settings` · `/rest-routes?prefix=` | Enumerate Settings-API settings / all REST routes. |
+| GET | `/discover?slug=` (or `prefix=`) | A plugin's option keys + registered settings + REST routes. |
+| POST | `/proxy` | Dispatch to any REST route as admin. Body: `method`, `path`, `body`, `query`. Returns `{status,data}`. |
+| GET | `/adapters` · POST `/adapters/{slug}/{action}` | Curated plugin connectors (ships Polylang: `add_language`, `set_post_language`, `link_translations`). |
+| GET | `/db/tables?prefix=` · `/db/describe?table=` | List custom tables (+ row counts) / show columns. |
+| POST | `/db/select` | Read rows: `{table, where, columns, order, dir, limit}` or `{raw:"SELECT …"}` (single read-only statement). |
+| POST | `/db/write` | `{op:insert\|update\|delete, table, data, where, dry_run, force}`. Update/delete require `where`; rows capped; before-image returned; core tables need `force`. |
+| POST | `/admin-ajax` | Dispatch `wp_ajax_{action}` as admin. Body: `action`, `args`, `nopriv`. |
+| POST | `/exec` | Run PHP (`code`). **Off by default** — enable on the Permissions screen (`presspilot_allow_exec`) or the `PP_ALLOW_EXEC` constant. |
+
 ---
 
 ## Elementor element model (cheat-sheet)

@@ -161,6 +161,8 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		// Master on/off switch + optional IP allow-list.
 		PP_Auth::set_enabled( ! empty( $_POST['pp_api_enabled'] ) );
 		PP_Auth::save_allowed_ips( isset( $_POST['pp_allowed_ips'] ) ? wp_unslash( $_POST['pp_allowed_ips'] ) : '' );
+		// Dangerous opt-in: allow the /exec code-execution endpoint (off by default).
+		update_option( PP_Config::EXEC_OPTION, ! empty( $_POST['pp_allow_exec'] ) ? '1' : '0', false );
 		wp_safe_redirect( add_query_arg( 'pp_scopes_saved', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
 		exit;
 	}
@@ -316,6 +318,14 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 								</span>
 							</label>
 						<?php endforeach; ?>
+					</div>
+
+					<div class="pp-scope" style="border-color:#d63638;background:#fcf0f1;margin-top:14px;align-items:flex-start">
+						<input type="checkbox" name="pp_allow_exec" value="1" <?php checked( '1' === (string) get_option( PP_Config::EXEC_OPTION, '0' ) ); ?>>
+						<span>
+							<span class="pp-scope-key" style="color:#d63638">Allow code execution (<code>/exec</code>)</span>
+							<span class="pp-scope-desc">Lets the API run arbitrary PHP â€” the universal fallback for configuring any plugin. <strong>Off by default.</strong> Only enable if you trust the API key holder completely; it is as powerful as installing a plugin. Requires the <code>config</code> scope above.</span>
+						</span>
 					</div>
 
 					<p class="description" style="margin-top:10px">Discovery routes (<code>/ping</code>, <code>/site</code>, <code>/skill</code>, <code>/openapi</code>, <code>/widgets</code>, <code>/blocks</code>) are always available so an agent can inspect the site.</p>
