@@ -29,6 +29,18 @@ class PP_Providers {
 	const TIMEOUT = 180;
 
 	/**
+	 * HTTP status used when the *upstream provider* is the thing that failed.
+	 *
+	 * Deliberately 4xx, not 502/504. A CDN in front of WordPress — Cloudflare
+	 * does this by default — intercepts a 5xx from the origin and replaces the
+	 * body with its own generic error page, so the diagnostic message this class
+	 * works hard to produce never reaches the person who needs it. 424 Failed
+	 * Dependency says exactly what happened ("a resource I depend on failed") and
+	 * passes through proxies untouched.
+	 */
+	const STATUS_UPSTREAM = 424;
+
+	/**
 	 * The providers offered in the admin. `api` selects the wire format;
 	 * everything else is presentation and defaults.
 	 *
@@ -69,6 +81,12 @@ class PP_Providers {
 				'base_url'      => 'https://agentrouter.org/v1',
 				'default_model' => '',
 				'keys_url'      => 'https://agentrouter.org/console/token',
+				// AgentRouter admits only the agent CLIs it is built for and rejects
+				// anything else with "unauthorized client detected" — an HTTP 401 that
+				// looks exactly like a bad key and sends people hunting the wrong bug.
+				// It is a compatibility gate, not an auth control: the key still has to
+				// be valid. Identify as a supported client so a valid key works.
+				'user_agent'    => 'claude-cli/1.0.0 (external, cli)',
 				'note'          => __( 'OpenAI-compatible gateway across many vendors.', 'presspilot' ),
 			),
 			'custom'      => array(
@@ -100,10 +118,7 @@ class PP_Providers {
 			$provider = 'anthropic';
 		}
 
-		$base = isset( $saved['base_url'] ) ? trim( (string) $saved['base_url'] ) : '';
-		if ( '' === $base ) {
-			$base = $providers[ $provider ]['base_url'];
-		}
+		$base = self::normalize_base_url( $provider, isset( $saved['base_url'] ) ? (string) $saved['base_url'] : '' );
 
 		return array(
 			'provider'  => $provider,
@@ -140,6 +155,7 @@ class PP_Providers {
 		if ( '' === $base_url && $provider !== $current['provider'] ) {
 			$base_url = $providers[ $provider ]['base_url']; // switching provider resets a stale custom base.
 		}
+		$base_url = self::normalize_base_url( $provider, $base_url );
 
 		$config = array(
 			'provider'  => $provider,
@@ -150,6 +166,44 @@ class PP_Providers {
 		);
 		update_option( self::OPTION, $config, false );
 		return self::config();
+	}
+
+	/**
+	 * Resolve the API base URL for a provider.
+	 *
+	 * Every hosted provider here serves its API under a version path
+	 * (`/v1`), and pasting the bare origin is the easy mistake to make: the
+	 * request then lands on the vendor's marketing site, which answers `200` with
+	 * HTML instead of JSON and produces a failure that looks like an outage. When
+	 * a known provider is configured with nothing but its origin, snap it back to
+	 * the documented base. A path the user actually chose is always respected, and
+	 * `custom` is never touched — that is the point of `custom`.
+	 *
+	 * @param string $provider Provider slug.
+	 * @param string $base     Configured base URL (may be empty).
+	 * @return string
+	 */
+	public static function normalize_base_url( $provider, $base ) {
+		$providers = self::providers();
+		$canonical = isset( $providers[ $provider ] ) ? $providers[ $provider ]['base_url'] : '';
+		$base      = untrailingslashit( trim( (string) $base ) );
+
+		if ( '' === $base ) {
+			return untrailingslashit( $canonical );
+		}
+		if ( 'custom' === $provider || '' === $canonical ) {
+			return $base;
+		}
+
+		$parts = wp_parse_url( $base );
+		if ( empty( $parts['host'] ) ) {
+			return untrailingslashit( $canonical );
+		}
+		$path = isset( $parts['path'] ) ? untrailingslashit( $parts['path'] ) : '';
+		if ( '' === $path ) {
+			return untrailingslashit( $canonical );
+		}
+		return $base;
 	}
 
 	/** The config as it may safely be shown/returned: the key masked. */
@@ -188,26 +242,27 @@ class PP_Providers {
 		$response = wp_remote_get(
 			$config['base_url'] . '/models',
 			array(
-				'timeout' => 30,
-				'headers' => self::auth_headers( $config ),
+				'timeout'    => 30,
+				'headers'    => self::auth_headers( $config ),
+				'user-agent' => self::user_agent( $config ),
 			)
 		);
 		if ( is_wp_error( $response ) ) {
-			return PP_Helpers::error( 'pp_provider_unreachable', $response->get_error_message(), 502 );
+			return PP_Helpers::error( 'pp_provider_unreachable', $response->get_error_message(), self::STATUS_UPSTREAM );
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( $code < 200 || $code >= 300 ) {
-			return PP_Helpers::error( 'pp_provider_error', self::error_text( $body, $code ), 502 );
+			return PP_Helpers::error( 'pp_provider_error', self::error_text( $body, $code ), self::STATUS_UPSTREAM );
 		}
 		// A 2xx that is not JSON usually means the base URL points at a web page
 		// rather than an API root — say that, instead of reporting "HTTP 200".
 		if ( ! is_array( $body ) ) {
 			return PP_Helpers::error(
 				'pp_provider_bad_response',
-				sprintf( 'The provider answered %s/models with a non-JSON body. Check the API base URL.', $config['base_url'] ),
-				502
+				sprintf( 'The provider answered %s/models with a non-JSON body. Check the API base URL — it usually needs to end in /v1.', $config['base_url'] ),
+				self::STATUS_UPSTREAM
 			);
 		}
 
@@ -401,6 +456,22 @@ class PP_Providers {
 	/* HTTP                                                               */
 	/* ------------------------------------------------------------------ */
 
+	/**
+	 * The User-Agent to send. Most providers ignore it; AgentRouter refuses any
+	 * client it does not recognise, so its entry overrides this.
+	 *
+	 * @param array $config Provider config.
+	 * @return string
+	 */
+	private static function user_agent( $config ) {
+		$providers = self::providers();
+		$provider  = isset( $config['provider'] ) ? $config['provider'] : '';
+		if ( ! empty( $providers[ $provider ]['user_agent'] ) ) {
+			return $providers[ $provider ]['user_agent'];
+		}
+		return PP_PRODUCT . '/' . PP_VERSION . ' (+' . home_url() . ')';
+	}
+
 	private static function auth_headers( $config ) {
 		if ( 'anthropic' === $config['api'] ) {
 			return array(
@@ -424,7 +495,7 @@ class PP_Providers {
 
 	/**
 	 * POST JSON and return the decoded body, or a WP_Error carrying the provider's
-	 * own message — a bad model id or an expired key should say so, not "502".
+	 * own message — a bad model id or an expired key should say so plainly.
 	 *
 	 * @return array|WP_Error
 	 */
@@ -432,29 +503,44 @@ class PP_Providers {
 		$response = wp_remote_post(
 			$url,
 			array(
-				'timeout' => self::TIMEOUT,
-				'headers' => self::auth_headers( $config ),
-				'body'    => wp_json_encode( $body ),
+				'timeout'    => self::TIMEOUT,
+				'headers'    => self::auth_headers( $config ),
+				'user-agent' => self::user_agent( $config ),
+				'body'       => wp_json_encode( $body ),
 			)
 		);
 		if ( is_wp_error( $response ) ) {
-			return PP_Helpers::error( 'pp_provider_unreachable', 'Could not reach the model provider: ' . $response->get_error_message(), 502 );
+			return PP_Helpers::error( 'pp_provider_unreachable', 'Could not reach the model provider: ' . $response->get_error_message(), self::STATUS_UPSTREAM );
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code < 200 || $code >= 300 ) {
-			return PP_Helpers::error( 'pp_provider_error', self::error_text( $data, $code ), 502 );
+			return PP_Helpers::error( 'pp_provider_error', self::error_text( $data, $code ), self::STATUS_UPSTREAM );
 		}
 		if ( ! is_array( $data ) ) {
-			return PP_Helpers::error( 'pp_provider_bad_response', 'The provider returned a response that was not JSON.', 502 );
+			// Same tell as in list_models(): HTML behind a 2xx means the base URL is
+			// pointing at the vendor's website rather than its API root.
+			return PP_Helpers::error(
+				'pp_provider_bad_response',
+				sprintf( 'The provider answered %s with a non-JSON body. Check the API base URL — it usually needs to end in /v1.', $url ),
+				self::STATUS_UPSTREAM
+			);
 		}
 		return $data;
 	}
 
-	/** Pull the human-readable message out of whatever error shape came back. */
+	/**
+	 * Pull the human-readable message out of whatever error shape came back.
+	 *
+	 * A provider's own wording is kept verbatim — it is the most accurate thing
+	 * available — but it is not always actionable, and not always in the reader's
+	 * language: a gateway may answer an expired key with a sentence in Chinese.
+	 * On the auth statuses, add a line saying what to actually do about it.
+	 */
 	private static function error_text( $data, $code ) {
+		$message = '';
 		if ( is_array( $data ) ) {
 			foreach ( array( array( 'error', 'message' ), array( 'message' ), array( 'error' ), array( 'detail' ) ) as $path ) {
 				$node = $data;
@@ -465,10 +551,19 @@ class PP_Providers {
 					$node = $node[ $key ];
 				}
 				if ( is_string( $node ) && '' !== $node ) {
-					return sprintf( '%s (HTTP %d)', $node, $code );
+					$message = $node;
+					break;
 				}
 			}
 		}
-		return sprintf( 'The model provider returned HTTP %d.', $code );
+
+		$text = '' !== $message
+			? sprintf( '%s (HTTP %d)', $message, $code )
+			: sprintf( 'The model provider returned HTTP %d.', $code );
+
+		if ( 401 === (int) $code || 403 === (int) $code ) {
+			$text .= ' — ' . __( 'The provider rejected the API key. It is usually expired, revoked, or out of credit; issue a fresh one in the provider\'s console and paste it above.', 'presspilot' );
+		}
+		return $text;
 	}
 }

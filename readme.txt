@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,11 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.1.1 =
+* Fix: copilot errors were invisible behind a CDN. Provider failures returned HTTP 502, and Cloudflare (by default) replaces a 5xx from the origin with its own generic error page — so the plugin's actual diagnostic never reached the user, who just saw "error code: 502". Upstream failures now return **424 Failed Dependency**, a 4xx that proxies pass through untouched.
+* Fix: a provider base URL saved as the bare origin (e.g. `https://agentrouter.org` instead of `https://agentrouter.org/v1`) silently sent every call to the vendor's marketing site, which answers 200 with HTML. Known providers are now normalised back to their documented API base; a path you chose yourself, and the `custom` provider, are left alone.
+* The "not JSON" error now names the URL it called and points at the missing `/v1`.
 
 = 2.1.0 =
 * **The dashboard is now multilingual** — every screen is fully translatable, and the plugin ships with **Persian (fa_IR)**, **Arabic (ar)** and **German (de_DE)** alongside English. 169 strings, no gaps.
