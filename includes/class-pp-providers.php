@@ -195,8 +195,17 @@ class PP_Providers {
 
 		$code = wp_remote_retrieve_response_code( $response );
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-		if ( $code < 200 || $code >= 300 || ! is_array( $body ) ) {
+		if ( $code < 200 || $code >= 300 ) {
 			return PP_Helpers::error( 'pp_provider_error', self::error_text( $body, $code ), 502 );
+		}
+		// A 2xx that is not JSON usually means the base URL points at a web page
+		// rather than an API root — say that, instead of reporting "HTTP 200".
+		if ( ! is_array( $body ) ) {
+			return PP_Helpers::error(
+				'pp_provider_bad_response',
+				sprintf( 'The provider answered %s/models with a non-JSON body. Check the API base URL.', $config['base_url'] ),
+				502
+			);
 		}
 
 		$models = array();

@@ -123,9 +123,12 @@ class PP_MCP {
 
 		$auth = self::authenticate( $request );
 		if ( is_wp_error( $auth ) ) {
+			// The auth failure path must never itself error, so read the status defensively.
+			$data   = $auth->get_error_data();
+			$status = is_array( $data ) && isset( $data['status'] ) ? (int) $data['status'] : 401;
 			return new WP_REST_Response(
 				self::error_body( null, self::E_INVALID_REQUEST, $auth->get_error_message() ),
-				(int) ( $auth->get_error_data()['status'] ?? 401 ),
+				$status,
 				array( 'WWW-Authenticate' => 'Bearer realm="PressPilot", error="invalid_token"' )
 			);
 		}

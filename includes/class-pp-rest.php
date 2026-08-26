@@ -219,8 +219,7 @@ class PP_REST {
 	}
 
 	public function agent_set_config( $request ) {
-		$config = PP_Providers::save_config( $request->get_params() );
-		unset( $config['api_key'] );
+		PP_Providers::save_config( $request->get_params() );
 		return rest_ensure_response( array( 'config' => PP_Providers::public_config() ) );
 	}
 

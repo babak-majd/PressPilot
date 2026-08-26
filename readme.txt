@@ -3,9 +3,9 @@ Contributors: babak-majd
 Donate link: https://bobclub.ir/coffee
 Tags: mcp, ai, gutenberg, rest-api, automation
 Requires at least: 5.8
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,13 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.0.1 =
+* Compatibility verified end to end (activation, MCP handshake, tools/list, a real block-content write through tools/call, and the full copilot loop) on **WordPress 5.8, 6.9.5 and 7.1** across **PHP 7.4, 8.2 and 8.4** — no notices, warnings or deprecations on any combination. Syntax additionally checked on PHP 8.0 and 8.3.
+* `Tested up to` raised to 7.1 (previously 7.0), now actually exercised rather than assumed.
+* Fix: `GET /agent/models` reported "the provider returned HTTP 200" when a 2xx response body was not JSON — it now says the base URL is likely pointing at a web page rather than an API root.
+* Fix: the MCP authentication-failure path read the error status without checking its shape; hardened so the failure path cannot itself raise a warning.
+* Remove dead code in the `/agent/config` write handler.
 
 = 2.0.0 =
 * **MCP server** — `POST /mcp`, a Model Context Protocol endpoint over Streamable HTTP (JSON-RPC 2.0). Connect Claude Code, OpenAI Codex, Cursor or any MCP client directly; the site shows up as native tools.
