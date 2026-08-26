@@ -151,6 +151,19 @@ class PP_REST {
 		register_rest_route( $ns, '/admin-ajax', $this->route( 'POST', 'config_admin_ajax', 'config' ) );
 		register_rest_route( $ns, '/exec', $this->route( 'POST', 'config_exec', 'config' ) );
 
+		// Model Context Protocol — the direct agent connection (Claude Code, Codex, …).
+		// Auth is handled inside the handler so failures come back as JSON-RPC.
+		PP_MCP::instance()->register_routes();
+
+		// The tool registry, and the built-in copilot that drives it.
+		register_rest_route( $ns, '/tools', $this->route( 'GET', 'list_tools' ) );
+		register_rest_route( $ns, '/tools/call', $this->route( 'POST', 'call_tool' ) );
+		register_rest_route( $ns, '/agent/config', $this->route( 'GET', 'agent_get_config' ) );
+		register_rest_route( $ns, '/agent/config', $this->route( 'POST', 'agent_set_config' ) );
+		register_rest_route( $ns, '/agent/models', $this->route( 'GET', 'agent_models' ) );
+		register_rest_route( $ns, '/agent/step', $this->route( 'POST', 'agent_step' ) );
+		register_rest_route( $ns, '/agent/run', $this->route( 'POST', 'agent_run' ) );
+
 		// Public: the agent Skill / API documentation (no key needed for discovery).
 		register_rest_route( $ns, '/skill', array(
 			'methods'             => 'GET',
@@ -162,6 +175,97 @@ class PP_REST {
 			'callback'            => array( $this, 'openapi' ),
 			'permission_callback' => '__return_true',
 		) );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Tools & the built-in copilot                                       */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * The tool surface as this site currently offers it — the same list MCP
+	 * clients see, useful for debugging what a disabled scope hid.
+	 */
+	public function list_tools() {
+		return rest_ensure_response(
+			array(
+				'profile'  => PP_Tools::profile(),
+				'count'    => count( PP_Tools::available() ),
+				'mcp_url'  => PP_MCP::endpoint_url(),
+				'mcp_on'   => PP_MCP::is_enabled(),
+				'tools'    => PP_Tools::mcp_definitions(),
+			)
+		);
+	}
+
+	/** Run one tool by name — the same dispatch MCP and the copilot use. */
+	public function call_tool( $request ) {
+		$name = (string) $request->get_param( 'name' );
+		if ( '' === $name ) {
+			return PP_Helpers::error( 'pp_missing_tool_name', 'A tool "name" is required.', 400 );
+		}
+		$args   = $request->get_param( 'arguments' );
+		$result = PP_Tools::call( $name, is_array( $args ) ? $args : array() );
+		return new WP_REST_Response( $result, $result['ok'] ? 200 : $result['status'] );
+	}
+
+	public function agent_get_config() {
+		return rest_ensure_response(
+			array(
+				'config'    => PP_Providers::public_config(),
+				'providers' => PP_Providers::providers(),
+				'tools'     => count( PP_Tools::available() ),
+			)
+		);
+	}
+
+	public function agent_set_config( $request ) {
+		$config = PP_Providers::save_config( $request->get_params() );
+		unset( $config['api_key'] );
+		return rest_ensure_response( array( 'config' => PP_Providers::public_config() ) );
+	}
+
+	public function agent_models() {
+		$models = PP_Providers::list_models();
+		if ( is_wp_error( $models ) ) {
+			return $models;
+		}
+		return rest_ensure_response( array( 'models' => $models ) );
+	}
+
+	/**
+	 * One copilot round trip. The caller keeps the conversation and loops, which
+	 * keeps any single request short enough for shared hosting.
+	 */
+	public function agent_step( $request ) {
+		$messages = $request->get_param( 'messages' );
+		$messages = is_array( $messages ) ? $messages : array();
+		$prompt   = (string) $request->get_param( 'prompt' );
+
+		if ( '' !== $prompt ) {
+			$messages[] = PP_Providers::user_message( $prompt );
+		}
+		if ( empty( $messages ) ) {
+			return PP_Helpers::error( 'pp_no_prompt', 'Send a "prompt" or a "messages" array.', 400 );
+		}
+
+		$step = PP_Agent::step( $messages );
+		if ( is_wp_error( $step ) ) {
+			return $step;
+		}
+		return rest_ensure_response( $step );
+	}
+
+	/** Run the copilot to completion server-side (headless callers). */
+	public function agent_run( $request ) {
+		$result = PP_Agent::run(
+			(string) $request->get_param( 'prompt' ),
+			$request->get_param( 'messages' ),
+			(int) $request->get_param( 'max_steps' )
+		);
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return rest_ensure_response( $result );
 	}
 
 	public function openapi() {

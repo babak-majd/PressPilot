@@ -13,6 +13,56 @@ disabled scope returns `403 pp_scope_disabled`.
 
 ---
 
+## MCP — the direct agent connection (v2.0)
+
+`POST /mcp` is a **Model Context Protocol** server over **Streamable HTTP** (JSON-RPC 2.0).
+Point Claude Code, OpenAI Codex, Cursor or any MCP client at it and the site appears as
+native tools — no prompt to paste, no HTTP to hand-write.
+
+- **Auth:** `Authorization: Bearer <key>` (or `X-PressPilot-Key`). Clients that accept only a
+  URL can use `?key=<key>` once the admin enables it on the *Agents* screen — the key then
+  travels in the URL, where logs can record it.
+- **Headers:** send `Accept: application/json, text/event-stream`. One JSON-RPC message per POST.
+- **Dual-era:** both the legacy `initialize` handshake (`2024-11-05` … `2025-11-25`) and the
+  modern stateless shape (`server/discover`, `2026-07-28`) are answered on the same endpoint;
+  the server mirrors back whichever era the client opened with.
+- **Stateless:** no `Mcp-Session-Id` is minted; `GET`/`DELETE` return `405`.
+
+| JSON-RPC method | Returns |
+|---|---|
+| `initialize` / `server/discover` | Capabilities, server info, and the **Skill as `instructions`** |
+| `tools/list` · `tools/call` | The tool surface; a failed call comes back as `isError:true`, not a protocol error |
+| `resources/list` · `resources/read` | `presspilot://skill`, `presspilot://site`, `presspilot://openapi` |
+| `prompts/list` · `prompts/get` | `build_site`, `migrate_to_gutenberg`, `configure_plugin`, `audit_site` |
+| `ping` | `{}` |
+
+Errors follow the spec: `-32022` with the supported list for an unknown protocol version,
+`-32020` for a header/body mismatch, `-32601` (HTTP 404 for modern clients) for an unknown method.
+
+**Capability scopes still rule.** A tool whose scope the admin disabled is **omitted from
+`tools/list` entirely**, so the model never wastes a call on a `403`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/mcp` | The MCP endpoint. |
+| GET | `/tools` | The tool list as this site currently exposes it (`profile`, `count`, `tools[]`). |
+| POST | `/tools/call` | Run one tool: `{name, arguments}`. Same dispatch MCP uses. |
+
+## Copilot — the built-in agent (v2.0)
+
+The plugin can also drive a model itself, with the same tools and the same Skill.
+Providers: `anthropic` (Anthropic Messages API) plus the OpenAI chat/completions shape —
+`openai`, `openrouter`, `agentrouter`, and `custom` for any compatible gateway.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET/POST | `/agent/config` | Read (key masked) / save provider, API key, model, base URL, step limit. |
+| GET | `/agent/models` | The provider's own model list, so an id is never stale. |
+| POST | `/agent/step` | **One** round trip: call the model once, run the tools it asked for, return the extended `messages` plus `done`. The caller loops — no single request can hit `max_execution_time`. |
+| POST | `/agent/run` | The whole loop server-side (`prompt`, optional `messages`, `max_steps`). A provider failure part-way returns the steps that already ran. |
+
+---
+
 ## Diagnostics
 | Method | Path | Purpose |
 |---|---|---|

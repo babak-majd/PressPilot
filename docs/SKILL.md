@@ -23,13 +23,45 @@ and the enabled **scopes** (capabilities the admin allowed — a disabled one re
 
 ## 1. Connect
 
+Two ways in. **If your client speaks MCP, use that** — you get the tools natively and
+this document is delivered to you automatically on connect.
+
+**a) MCP (Model Context Protocol) — preferred**
+
+- Endpoint: `https://SITE/wp-json/presspilot/v1/mcp` · transport **Streamable HTTP** (POST).
+- Auth: `Authorization: Bearer <API key>` (or `X-PressPilot-Key`). Where a client can only
+  take a bare URL and the admin has opted in, `?key=<API key>` also works.
+- Dual-era: both the legacy `initialize` handshake (2024-11-05 … 2025-11-25) and the modern
+  stateless shape (`server/discover`, 2026-07-28) are answered on the same endpoint.
+- You get **tools** (one per capability below), **resources** (`presspilot://skill`,
+  `presspilot://site`, `presspilot://openapi`) and **prompts** (`build_site`,
+  `migrate_to_gutenberg`, `configure_plugin`, `audit_site`).
+- Tools whose capability the admin disabled are **not listed at all** — if a tool you expect
+  is missing, that capability is off; say so rather than hunting for a workaround.
+
+```bash
+# Claude Code
+claude mcp add --transport http presspilot \
+  https://SITE/wp-json/presspilot/v1/mcp --header "Authorization: Bearer pp_xxx"
+```
+
+```toml
+# OpenAI Codex — ~/.codex/config.toml
+[mcp_servers.presspilot]
+url = "https://SITE/wp-json/presspilot/v1/mcp"
+bearer_token_env_var = "PRESSPILOT_KEY"
+```
+
+**b) Raw REST**
+
 - Base URL: `https://SITE/wp-json/presspilot/v1` (pretty permalinks) or the always-works
   fallback `https://SITE/?rest_route=/presspilot/v1/<path>`.
 - Auth: header `X-PressPilot-Key: <API key>` on every request (key is on the plugin's
   settings screen). JSON bodies; send `Content-Type: application/json`.
-- **First call every session:** `GET /site`. It reports Elementor + Pro versions,
-  the active theme (+ `is_block_theme`), enabled `scopes`, and whether the flexbox
-  **container** experiment is on. Build accordingly.
+
+**First call every session (either way):** `GET /site` / `wp_get_site`. It reports Elementor +
+Pro versions, the active theme (+ `is_block_theme`), enabled `scopes`, and whether the flexbox
+**container** experiment is on. Build accordingly.
 
 ## 1b. Gutenberg content — how to write blocks
 
@@ -301,6 +333,9 @@ Custom CSS, and turn off Elementor's own Google Fonts with
 | GET | `/db/tables` `/db/describe` · POST `/db/select` `/db/write` | config | custom plugin tables — read (structured or raw SELECT) / write (dry-run, before-image, core-table guard) |
 | POST | `/admin-ajax` | config | dispatch a `wp_ajax_{action}` handler as admin |
 | POST | `/exec` | config | run PHP (opt-in; `presspilot_allow_exec`) — universal last resort |
+| POST | `/mcp` | — | **MCP endpoint** (Streamable HTTP, JSON-RPC 2.0) — the direct agent connection |
+| GET/POST | `/tools` · `/tools/call` | — | the tool registry MCP exposes / run one tool by name |
+| GET/POST | `/agent/config` · GET `/agent/models` · POST `/agent/step` `/agent/run` | — | the built-in copilot: provider config, model list, one round trip, or the whole loop |
 | GET | `/skill` `/openapi` | — | this document / OpenAPI 3.0 spec (public) |
 
 `POST/PUT /content` also accepts `excerpt`, `categories[]`, `tags[]` (posts), `page_template`
@@ -358,7 +393,7 @@ plugin that exposes REST.
 **Plugins that need their own PHP API** (Polylang, WPML, …) have curated, self-describing
 **adapters**: `GET /adapters` lists them and their actions (and whether the plugin is active);
 `POST /adapters/{slug}/{action}` runs a whitelisted action, e.g.
-`POST /adapters/polylang/add_language { "locale":"fa_IR", "name":"فارسی", "rtl":1 }`,
+`POST /adapters/polylang/add_language { "locale":"fa_IR", "name":"Persian", "rtl":1 }`,
 `…/set_post_language { post_id, lang }`, `…/link_translations { translations:{ en:12, fa:34 } }`.
 Only registered actions run, and only when the plugin is active — never arbitrary code.
 

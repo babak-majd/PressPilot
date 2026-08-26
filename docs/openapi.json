@@ -2,10 +2,10 @@
   "openapi": "3.0.3",
   "info": {
     "title": "PressPilot API",
-    "description": "Secure REST API to build and manage a WordPress site with native Gutenberg blocks or Elementor (Pro), migrate Elementor \u2192 Gutenberg in place, and manage menus, plugins, block-theme (FSE) templates, global styles/CSS, themes and site options. Each route belongs to a capability scope the admin can toggle on the Permissions screen (a disabled scope returns 403 pp_scope_disabled). Auth: send the API key as the `X-PressPilot-Key` header on every request (public endpoints excepted). See the agent Skill at `/skill`.",
+    "description": "Secure REST API + a native MCP (Model Context Protocol) endpoint so an AI agent — Claude Code, OpenAI Codex, Cursor, or the plugin's own copilot driving Anthropic/OpenAI/OpenRouter/AgentRouter — can build and manage a WordPress site: native Gutenberg blocks or Elementor (Pro), migrate Elementor → Gutenberg in place, and manage menus, plugins, block-theme (FSE) templates, global styles/CSS, themes, site options and plugin configuration. Each route belongs to a capability scope the admin can toggle on the Permissions screen (a disabled scope returns 403 pp_scope_disabled).",
     "version": "0.0.0",
     "contact": {
-      "name": "PressPilot \u2014 Baabak Majd",
+      "name": "PressPilot — Baabak Majd",
       "url": "https://bobclub.ir"
     },
     "license": {
@@ -60,6 +60,14 @@
     {
       "name": "Config",
       "description": "Configuration assistant: read/write options, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters; custom DB tables; admin-ajax; opt-in code exec. Scope: config."
+    },
+    {
+      "name": "MCP",
+      "description": "Model Context Protocol server (Streamable HTTP, JSON-RPC 2.0). The direct connection for MCP-speaking agents: tools, resources and prompts, gated by the same capability scopes. Dual-era — both the legacy initialize handshake and the modern stateless server/discover shape are answered."
+    },
+    {
+      "name": "Agent",
+      "description": "The built-in copilot: model-provider configuration and the tool-calling loop that runs inside WordPress."
     }
   ],
   "paths": {
@@ -777,7 +785,7 @@
         "tags": [
           "Diagnostics"
         ],
-        "summary": "Elementor \u2192 Gutenberg migration completion check.",
+        "summary": "Elementor → Gutenberg migration completion check.",
         "description": "fully_migrated is true only when no content is in Elementor builder mode, no elementor_library entries remain, and the Elementor plugin is deactivated. Includes leftover items and next_steps.",
         "responses": {
           "200": {
@@ -946,7 +954,7 @@
         "tags": [
           "Site"
         ],
-        "summary": "Public contact-form submit \u2192 wp_mail (honeypot + rate limit).",
+        "summary": "Public contact-form submit → wp_mail (honeypot + rate limit).",
         "security": [],
         "requestBody": {
           "required": true,
@@ -965,7 +973,7 @@
                   },
                   "pp_hp": {
                     "type": "string",
-                    "description": "Honeypot \u2014 must be empty."
+                    "description": "Honeypot — must be empty."
                   }
                 }
               }
@@ -1283,7 +1291,7 @@
         "tags": [
           "FSE"
         ],
-        "summary": "Create/update a wp_template (index, single, archive, \u2026).",
+        "summary": "Create/update a wp_template (index, single, archive, …).",
         "requestBody": {
           "required": true,
           "content": {
@@ -1867,7 +1875,7 @@
           "Config"
         ],
         "summary": "Read rows",
-        "description": "Structured {table,where,columns,order,dir,limit} or {raw:'SELECT \u2026'} (single read-only statement).",
+        "description": "Structured {table,where,columns,order,dir,limit} or {raw:'SELECT …'} (single read-only statement).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1949,6 +1957,314 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "tags": [
+          "MCP"
+        ],
+        "summary": "MCP endpoint (JSON-RPC 2.0 over Streamable HTTP)",
+        "description": "The direct agent connection. Send one JSON-RPC request per POST with `Accept: application/json, text/event-stream`. Supported methods: `initialize`, `server/discover`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `resources/templates/list`, `prompts/list`, `prompts/get`. Notifications are answered with 202 and no body; GET and DELETE return 405 (this server is stateless and opens no standalone stream). Auth is the same API key as `Authorization: Bearer <key>`; `?key=` is accepted when the admin has enabled it. Tools whose capability scope is disabled are omitted from `tools/list` entirely.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                  "name": "wp_get_site",
+                  "arguments": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "jsonrpc": "2.0",
+                  "id": 1,
+                  "result": {
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "{ \"site_url\": \"https://example.com\", … }"
+                      }
+                    ],
+                    "isError": false
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Notification accepted (no body)"
+          },
+          "400": {
+            "description": "Malformed JSON, unsupported protocol version (-32022), or header/body mismatch (-32020)"
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Unknown JSON-RPC method (modern-era clients)"
+          },
+          "405": {
+            "description": "GET or DELETE — this endpoint accepts POST only"
+          },
+          "503": {
+            "description": "The MCP endpoint is turned off on this site"
+          }
+        }
+      }
+    },
+    "/tools": {
+      "get": {
+        "tags": [
+          "MCP"
+        ],
+        "summary": "List the tools this site exposes",
+        "description": "The same tool list MCP clients see, after the tool profile and capability scopes have been applied. Useful for confirming what a disabled scope hid.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "profile": "full",
+                  "count": 46,
+                  "mcp_url": "https://example.com/wp-json/presspilot/v1/mcp",
+                  "mcp_on": true,
+                  "tools": [
+                    {
+                      "name": "wp_get_skill",
+                      "title": "Read the operating manual",
+                      "description": "…",
+                      "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/call": {
+      "post": {
+        "tags": [
+          "MCP"
+        ],
+        "summary": "Run one tool by name",
+        "description": "Dispatches through the same path MCP and the copilot use, so capability scopes still apply.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "name": "wp_create_content",
+                "arguments": {
+                  "title": "About",
+                  "status": "publish",
+                  "blocks": [
+                    {
+                      "blockName": "core/paragraph",
+                      "innerHTML": "<p>Hello.</p>"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "status": 200,
+                  "data": {
+                    "id": 42,
+                    "url": "https://example.com/about/"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/config": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Read the copilot provider configuration",
+        "description": "The saved provider, model, base URL and step limit. The API key comes back masked.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "config": {
+                    "provider": "anthropic",
+                    "api": "anthropic",
+                    "api_key": "sk-ant••••••••••••8a2f",
+                    "model": "claude-opus-5",
+                    "base_url": "https://api.anthropic.com/v1",
+                    "max_steps": 12,
+                    "configured": true
+                  },
+                  "tools": 46
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Save the copilot provider configuration",
+        "description": "Providers: `anthropic` (Anthropic Messages API) and the OpenAI chat/completions shape — `openai`, `openrouter`, `agentrouter`, `custom`. An omitted or masked `api_key` keeps the stored one.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "provider": "openrouter",
+                "api_key": "sk-or-…",
+                "model": "anthropic/claude-sonnet-4.5",
+                "max_steps": 12
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved"
+          }
+        }
+      }
+    },
+    "/agent/models": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "List the models the configured provider offers",
+        "description": "Queries the provider's own `/models` endpoint so a model id is never stale.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "models": [
+                    "claude-opus-5",
+                    "claude-sonnet-5"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The provider could not be reached, or rejected the key"
+          }
+        }
+      }
+    },
+    "/agent/step": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "One copilot round trip",
+        "description": "Sends the conversation to the model once, runs whatever tools it asked for, and returns the extended conversation. The caller keeps `messages` and loops until `done` — this keeps any single HTTP request short enough for shared hosting.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "prompt": "Add a pricing page with three tiers.",
+                "messages": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "messages": [
+                    "…provider-native conversation…"
+                  ],
+                  "text": "I'll start by reading the skill.",
+                  "tool_calls": [
+                    {
+                      "name": "wp_get_skill",
+                      "ok": true,
+                      "status": 200,
+                      "summary": "ok"
+                    }
+                  ],
+                  "done": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/run": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Run the copilot to completion",
+        "description": "The whole tool-calling loop server-side, for headless callers (cron, scripts, another agent delegating to the site). Bounded by `max_steps`; a provider failure part-way returns the steps that already ran rather than discarding them.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "prompt": "Audit the site and report what to fix first.",
+                "max_steps": 12
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "done": true,
+                  "text": "Here is what I found…",
+                  "steps": [],
+                  "truncated": false
+                }
+              }
+            }
           }
         }
       }
@@ -2175,7 +2491,7 @@
           },
           "parent": {
             "type": "integer",
-            "description": "Parent page ID. Nests the page so its URL becomes /{parent-slug}/{slug}/ \u2014 e.g. a language subdirectory /fa/faq/."
+            "description": "Parent page ID. Nests the page so its URL becomes /{parent-slug}/{slug}/ — e.g. a language subdirectory /fa/faq/."
           },
           "status": {
             "type": "string",
@@ -2199,7 +2515,7 @@
           },
           "builder": {
             "type": "string",
-            "description": "'gutenberg' (or 'block') detaches the post from Elementor before writing \u2014 in-place migration.",
+            "description": "'gutenberg' (or 'block') detaches the post from Elementor before writing — in-place migration.",
             "enum": [
               "gutenberg",
               "block",

@@ -41,6 +41,31 @@ class PP_Auth {
 	/** @var PP_Auth */
 	private static $instance;
 
+	/**
+	 * Depth of the current internal dispatch. When > 0 the caller is the plugin
+	 * itself re-entering its own REST routes on behalf of an already-authenticated
+	 * request (the MCP server, the built-in copilot), so the key and IP checks are
+	 * waived — but the master switch and the capability scopes still apply, which
+	 * is what actually protects the site.
+	 *
+	 * @var int
+	 */
+	private static $internal_depth = 0;
+
+	public static function begin_internal() {
+		self::$internal_depth++;
+	}
+
+	public static function end_internal() {
+		if ( self::$internal_depth > 0 ) {
+			self::$internal_depth--;
+		}
+	}
+
+	public static function is_internal() {
+		return self::$internal_depth > 0;
+	}
+
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -121,6 +146,19 @@ class PP_Auth {
 		// Master switch: the whole API can be turned off from the admin for safety.
 		if ( ! self::is_enabled() ) {
 			return PP_Helpers::error( 'pp_api_disabled', 'The PressPilot API is turned off on this site.', 503 );
+		}
+
+		// An internal re-entry (MCP tool call, copilot step). The outer request was
+		// already authenticated; only the capability check below still applies.
+		if ( self::is_internal() ) {
+			if ( '' !== $scope && ! self::scope_allowed( $scope ) ) {
+				return PP_Helpers::error(
+					'pp_scope_disabled',
+					sprintf( 'The "%s" capability is turned off for the API on this site. Enable it on the PressPilot settings screen.', $scope ),
+					403
+				);
+			}
+			return true;
 		}
 
 		$stored    = self::get_key();

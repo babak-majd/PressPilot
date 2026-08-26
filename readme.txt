@@ -1,23 +1,41 @@
 === PressPilot ===
 Contributors: babak-majd
 Donate link: https://bobclub.ir/coffee
-Tags: gutenberg, rest-api, ai, automation, block-editor
+Tags: mcp, ai, gutenberg, rest-api, automation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Secure REST API + agent Skill that lets an AI agent build and manage your whole WordPress site with native Gutenberg blocks.
+Connect Claude Code, Codex, OpenRouter or AgentRouter straight to WordPress over MCP and let an AI agent build and manage your whole site.
 
 == Description ==
 
-PressPilot exposes a namespaced, API-key-protected REST API (`/wp-json/presspilot/v1/`) so an AI
-agent can build and manage your whole site remotely — no FTP/SSH or PHP shell access required.
+PressPilot turns your WordPress site into something an AI agent can actually drive. Connect an
+agent **directly** over MCP — or use the copilot built into wp-admin — and it can build and manage
+the whole site remotely: no FTP, no SSH, no PHP shell access.
+
+**Connect an agent directly (MCP).** The plugin serves a Model Context Protocol endpoint at
+`/wp-json/presspilot/v1/mcp` over Streamable HTTP, so **Claude Code**, **OpenAI Codex**, **Cursor**
+and any other MCP client see your site as native tools — no prompt to paste, no HTTP to hand-write.
+The *Agents* screen gives you the exact copy-paste setup for each client. Both MCP eras are
+supported on the same endpoint (the legacy `initialize` handshake and the modern stateless
+`server/discover` shape), so it works with clients old and new.
+
+**Or use the built-in copilot.** Connect **Anthropic**, **OpenAI**, **OpenRouter**, **AgentRouter**
+or any OpenAI-compatible endpoint and chat with your site from wp-admin. Same tools, same
+permissions, same rules as an external agent — one source of truth, two ways in.
+
+**The Skill travels with the connection.** The plugin ships an operating manual that is delivered
+to the agent automatically on connect (as MCP `instructions`, as a resource, and as a tool). That
+is what makes the output actually work rather than merely look like working code.
 
 Features:
 
+* **MCP server** (Streamable HTTP): tools, resources and prompts for any MCP client. Disabled capabilities are hidden from the tool list entirely, so the model never wastes a call on a 403.
+* **Built-in copilot** with Anthropic / OpenAI / OpenRouter / AgentRouter / custom OpenAI-compatible providers, and a live model list pulled from the provider.
 * Build pages/posts with **native Gutenberg blocks** (structured block tree or raw block markup) with no page-builder dependency.
 * **Migrate legacy page-builder content to blocks in place**, keeping the same URLs.
 * Block-theme (FSE) support: create/update `wp_template` and `wp_template_part` (header/footer, single, archive).
@@ -37,8 +55,9 @@ Site: https://bobclub.ir · Telegram: https://t.me/bob_club
 == Installation ==
 
 1. Upload the plugin zip via Plugins > Add New > Upload Plugin, then Activate.
-2. Make sure Elementor (and optionally Elementor Pro) is active.
-3. Go to Settings > AI Assistant, copy the REST Base URL and API Key, and give them to your assistant.
+2. Go to **PressPilot > Agents (MCP)** and copy the setup line for your client (Claude Code, Codex, Cursor, …).
+3. Or go to **PressPilot > Copilot**, add a model provider API key, and chat with your site from wp-admin.
+4. Elementor is optional — native Gutenberg builds work on any theme.
 
 == Frequently Asked Questions ==
 
@@ -46,10 +65,33 @@ Site: https://bobclub.ir · Telegram: https://t.me/bob_club
 Re-save Permalinks (Settings > Permalinks > Save). Or use the fallback form `/?rest_route=/presspilot/v1/...`.
 
 = Is it safe? =
-Every endpoint requires the secret API key. Keep it private and serve your site over HTTPS. You can
-regenerate the key at any time from the settings page.
+Every endpoint — MCP included — requires the secret API key, compared in constant time. Keep it
+private and serve your site over HTTPS; you can regenerate it at any time. The Permissions screen
+adds a master on/off switch, an optional IP/CIDR allow-list, and per-capability toggles: a
+capability you turn off is not just refused, its tools are hidden from the agent entirely. PHP
+code execution (`/exec`) is off by default.
+
+= Which agents can connect? =
+Anything that speaks MCP over HTTP — Claude Code, OpenAI Codex, Cursor, Windsurf, VS Code and
+others. For the built-in copilot: Anthropic, OpenAI, OpenRouter, AgentRouter, or any endpoint that
+speaks OpenAI `/chat/completions` (a local Ollama or vLLM server, LiteLLM, a company gateway).
+
+= My server strips the Authorization header =
+Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the `?key=` form
+instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.0.0 =
+* **MCP server** — `POST /mcp`, a Model Context Protocol endpoint over Streamable HTTP (JSON-RPC 2.0). Connect Claude Code, OpenAI Codex, Cursor or any MCP client directly; the site shows up as native tools.
+  * Dual-era on one endpoint: the legacy `initialize` handshake (2024-11-05 … 2025-11-25) **and** the modern stateless `server/discover` shape (2026-07-28), with spec-correct version negotiation (`-32022`) and header/body validation (`-32020`).
+  * Tools, resources (`presspilot://skill`, `presspilot://site`, `presspilot://openapi`) and prompts (`build_site`, `migrate_to_gutenberg`, `configure_plugin`, `audit_site`).
+  * The agent Skill is delivered on connect as MCP `instructions`, so agents follow the site's build rules from their first message.
+* **Built-in copilot** — connect Anthropic, OpenAI, OpenRouter, AgentRouter or any OpenAI-compatible endpoint and chat with your site from wp-admin. `GET /agent/models` pulls the live model list from the provider; `POST /agent/step` runs one round trip (the browser drives the loop, so no request can hit max_execution_time) and `POST /agent/run` runs the whole loop server-side for headless callers.
+* **One tool registry** behind both surfaces (`GET /tools`, `POST /tools/call`) — every tool is a thin wrapper over an existing REST route, dispatched internally, so handlers, validation and capability scopes stay the single source of truth.
+* **Permissions carry over**: a tool whose capability scope is disabled is omitted from `tools/list` entirely rather than failing at call time. New "Essential/Full" tool-profile setting trims the surface for smaller models.
+* New admin screens: **Agents (MCP)** (endpoint, per-client copy-paste setup, tool inventory) and **Copilot** (provider, model, chat).
+* Optional `?key=` URL auth for clients that cannot send custom headers (off by default).
 
 = 1.9.0 =
 * **Universal reach** — configure virtually any plugin, whatever it stores config in:
