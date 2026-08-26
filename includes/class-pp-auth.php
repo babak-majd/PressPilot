@@ -24,6 +24,10 @@ class PP_Auth {
 	 * route declares one of these; a request is refused if its group is off.
 	 * Default is "everything on" so nothing breaks out of the box.
 	 *
+	 * The English text here is the machine-readable fallback used by the API
+	 * (/scopes); the admin screen renders ::scope_labels() instead, which is
+	 * translated into the dashboard language.
+	 *
 	 * @var array<string,string>
 	 */
 	const SCOPES = array(
@@ -37,6 +41,27 @@ class PP_Auth {
 		'settings'  => 'Site settings (options, homepage, permalinks)',
 		'config'    => 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)',
 	);
+
+	/**
+	 * The same capability groups, described for a human in the dashboard's own
+	 * language. Keys are identical to ::SCOPES and are never translated — they
+	 * are the wire identifiers agents see.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function scope_labels() {
+		return array(
+			'content'   => __( 'Pages & posts (create / edit / delete content)', 'presspilot' ),
+			'media'     => __( 'Media library (upload & list images)', 'presspilot' ),
+			'menus'     => __( 'Navigation menus (create & edit menus)', 'presspilot' ),
+			'templates' => __( 'Templates (Elementor Theme Builder, block themes, patterns)', 'presspilot' ),
+			'styles'    => __( 'Global styles & CSS (Additional CSS, theme.json global styles)', 'presspilot' ),
+			'themes'    => __( 'Themes (install, activate, switch)', 'presspilot' ),
+			'plugins'   => __( 'Plugins (install, activate, deactivate, delete)', 'presspilot' ),
+			'settings'  => __( 'Site settings (options, homepage, permalinks)', 'presspilot' ),
+			'config'    => __( 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)', 'presspilot' ),
+		);
+	}
 
 	/** @var PP_Auth */
 	private static $instance;

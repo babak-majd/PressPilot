@@ -1,11 +1,11 @@
 === PressPilot ===
 Contributors: babak-majd
 Donate link: https://bobclub.ir/coffee
-Tags: mcp, ai, gutenberg, rest-api, automation
+Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.1
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,13 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.1.0 =
+* **The dashboard is now multilingual** — every screen is fully translatable, and the plugin ships with **Persian (fa_IR)**, **Arabic (ar)** and **German (de_DE)** alongside English. 169 strings, no gaps.
+* **Right-to-left support is automatic.** The language comes from WordPress alone (Settings → Site Language, or the per-user language on a profile) and RTL follows the locale's own direction. The plugin adds **no rewrite rules, no query parameters and no URL segments** — translating it changes nothing about this site's addresses.
+* The admin stylesheet is written with CSS logical properties, so every screen mirrors correctly on an RTL locale with no separate RTL stylesheet to load. API keys, endpoint URLs, curl lines, TOML and JSON snippets are pinned left-to-right so they stay readable and copyable in an RTL dashboard, and chat messages use `unicode-bidi: plaintext` so each message picks up its own direction.
+* What a *model* reads stays English on every locale by design — the agent prompt, the MCP `instructions`, and tool descriptions. They pair with an English operating manual, and mixing languages in an LLM's context makes its output worse.
+* Capability descriptions, provider notes and MCP client hints are translated; capability keys and vendor names are not (they are wire identifiers and brands).
 
 = 2.0.1 =
 * Compatibility verified end to end (activation, MCP handshake, tools/list, a real block-content write through tools/call, and the full copilot loop) on **WordPress 5.8, 6.9.5 and 7.1** across **PHP 7.4, 8.2 and 8.4** — no notices, warnings or deprecations on any combination. Syntax additionally checked on PHP 8.0 and 8.3.

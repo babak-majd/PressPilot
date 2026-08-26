@@ -644,6 +644,10 @@ class PP_MCP {
 	/**
 	 * Ready-to-paste connection setup for the agents people actually use.
 	 *
+	 * The code samples are literal client configuration and never translated;
+	 * the notes around them are read by a person, so they follow the dashboard
+	 * language.
+	 *
 	 * @param string $key API key.
 	 * @return array<string,array{label:string,lang:string,code:string,note:string}>
 	 */
@@ -655,19 +659,19 @@ class PP_MCP {
 			'claude-code' => array(
 				'label' => 'Claude Code',
 				'lang'  => 'bash',
-				'note'  => 'Run this once in your terminal, then start Claude Code and ask it to build. Add --scope user to make it available in every project.',
+				'note'  => __( 'Run this once in your terminal, then start Claude Code and ask it to build. Add --scope user to make it available in every project.', 'presspilot' ),
 				'code'  => "claude mcp add --transport http presspilot \\\n  " . $url . " \\\n  --header \"Authorization: Bearer " . $key . '"',
 			),
 			'codex'       => array(
 				'label' => 'OpenAI Codex',
 				'lang'  => 'toml',
-				'note'  => 'Add this to ~/.codex/config.toml (a url key means a remote Streamable HTTP server). Export PRESSPILOT_KEY in your shell so the token stays out of the file.',
+				'note'  => __( 'Add this to ~/.codex/config.toml (a url key means a remote Streamable HTTP server). Export PRESSPILOT_KEY in your shell so the token stays out of the file.', 'presspilot' ),
 				'code'  => "[mcp_servers.presspilot]\nurl = \"" . $url . "\"\nbearer_token_env_var = \"PRESSPILOT_KEY\"\n\n# then, in your shell:\n#   export PRESSPILOT_KEY=\"" . $key . '"',
 			),
 			'cursor'      => array(
 				'label' => 'Cursor / Windsurf / VS Code',
 				'lang'  => 'json',
-				'note'  => 'Add to .cursor/mcp.json in your project (or the editor\'s global MCP settings).',
+				'note'  => __( 'Add to .cursor/mcp.json in your project, or to the editor\'s global MCP settings.', 'presspilot' ),
 				'code'  => wp_json_encode(
 					array(
 						'mcpServers' => array(
@@ -681,11 +685,11 @@ class PP_MCP {
 				),
 			),
 			'url-only'    => array(
-				'label' => 'Any client (URL only)',
+				'label' => __( 'Any client (URL only)', 'presspilot' ),
 				'lang'  => 'text',
 				'note'  => self::url_key_allowed()
-					? 'For clients that accept only a URL and no custom headers. The key travels in the URL, so it can end up in server and proxy logs — prefer a header where you can.'
-					: 'Turn on "Allow the key in the URL" below to use this form. It suits clients that accept only a URL and no custom headers.',
+					? __( 'For clients that accept only a URL and no custom headers. The key travels in the URL, so it can end up in server and proxy logs — prefer a header where you can.', 'presspilot' )
+					: __( 'Turn on "Key in the URL" below to use this form. It suits clients that accept only a URL and no custom headers.', 'presspilot' ),
 				'code'  => $url_key,
 			),
 		);

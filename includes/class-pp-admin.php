@@ -3,11 +3,21 @@
  * Admin settings screens.
  *
  *  - Connect: the API key, REST base URL and a ready-to-paste agent prompt.
+ *  - Agents (MCP): the MCP endpoint and per-client connection snippets.
+ *  - Copilot: model provider settings and the in-dashboard chat.
  *  - Permissions: per-capability toggles that gate what the API key may touch.
  *  - API & Docs: the bundled agent Skill / OpenAPI links.
  *
  * Styling stays inside the native WordPress admin (cards, form-tables, buttons);
- * only a small scoped stylesheet is added for polish.
+ * only a small scoped stylesheet is added for polish. Every rule that has a side
+ * uses logical properties, so the screens mirror correctly on an RTL locale
+ * without a second stylesheet — while keys, URLs and code samples are pinned
+ * LTR, because those are never right-to-left no matter what the admin language is.
+ *
+ * Everything a human reads here is translatable. Everything a *model* reads —
+ * the agent prompt, the MCP instructions, tool descriptions — deliberately stays
+ * in English: the operating manual it is paired with is English, and mixing
+ * languages in an LLM's context degrades its output.
  *
  * @package PressPilot
  */
@@ -46,11 +56,17 @@ class PP_Admin {
 			'dashicons-superhero-alt',
 			58
 		);
-		add_submenu_page( 'presspilot-settings', $product, 'Connect', 'manage_options', 'presspilot-settings', array( $this, 'render' ) );
-		add_submenu_page( 'presspilot-settings', $product . ' — Agents (MCP)', 'Agents (MCP)', 'manage_options', 'presspilot-agents', array( $this, 'render_agents' ) );
-		add_submenu_page( 'presspilot-settings', $product . ' — Copilot', 'Copilot', 'manage_options', 'presspilot-copilot', array( $this, 'render_copilot' ) );
-		add_submenu_page( 'presspilot-settings', $product . ' — Permissions', 'Permissions', 'manage_options', 'presspilot-permissions', array( $this, 'render_permissions' ) );
-		add_submenu_page( 'presspilot-settings', $product . ' — API & Skill', 'API &amp; Docs', 'manage_options', 'presspilot-docs', array( $this, 'render_docs' ) );
+		/* translators: %s: plugin name. */
+		$title = __( '%s — Connect', 'presspilot' );
+		add_submenu_page( 'presspilot-settings', sprintf( $title, $product ), __( 'Connect', 'presspilot' ), 'manage_options', 'presspilot-settings', array( $this, 'render' ) );
+		/* translators: %s: plugin name. */
+		add_submenu_page( 'presspilot-settings', sprintf( __( '%s — Agents (MCP)', 'presspilot' ), $product ), __( 'Agents (MCP)', 'presspilot' ), 'manage_options', 'presspilot-agents', array( $this, 'render_agents' ) );
+		/* translators: %s: plugin name. */
+		add_submenu_page( 'presspilot-settings', sprintf( __( '%s — Copilot', 'presspilot' ), $product ), __( 'Copilot', 'presspilot' ), 'manage_options', 'presspilot-copilot', array( $this, 'render_copilot' ) );
+		/* translators: %s: plugin name. */
+		add_submenu_page( 'presspilot-settings', sprintf( __( '%s — Permissions', 'presspilot' ), $product ), __( 'Permissions', 'presspilot' ), 'manage_options', 'presspilot-permissions', array( $this, 'render_permissions' ) );
+		/* translators: %s: plugin name. */
+		add_submenu_page( 'presspilot-settings', sprintf( __( '%s — API & Skill', 'presspilot' ), $product ), __( 'API &amp; Docs', 'presspilot' ), 'manage_options', 'presspilot-docs', array( $this, 'render_docs' ) );
 	}
 
 	public function action_links( $links ) {
@@ -70,30 +86,31 @@ class PP_Admin {
 			.pp-hero{display:flex;align-items:center;gap:12px;margin:6px 0 2px}
 			.pp-hero .dashicons{font-size:34px;width:34px;height:34px;color:#2271b1}
 			.pp-hero h1{margin:0;padding:0;font-size:23px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-			.pp-ver{display:inline-block;font-size:12px;font-weight:600;color:#2271b1;background:#f0f6fc;border:1px solid #c5d9ed;border-radius:999px;padding:1px 9px;vertical-align:middle}
+			.pp-ver{display:inline-block;font-size:12px;font-weight:600;color:#2271b1;background:#f0f6fc;border:1px solid #c5d9ed;border-radius:999px;padding:1px 9px;vertical-align:middle;direction:ltr}
 			.pp-tag{color:#646970;font-size:13px}
 			.pp-sec{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;background:#fafafa;margin:4px 0 12px}
 			.pp-sec .dashicons{color:#2271b1}
-			.pp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:4px}
+			.pp-sec .pp-push{margin-inline-start:auto}
+			.pp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-inline-end:4px}
 			.pp-dot.on{background:#00a32a}.pp-dot.off{background:#d63638}
 			.pp-card{background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 			.pp-card h2{margin-top:0;font-size:15px;display:flex;align-items:center;gap:8px}
-			.pp-step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#2271b1;color:#fff;font-size:12px;font-weight:600}
+			.pp-step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#2271b1;color:#fff;font-size:12px;font-weight:600;flex:0 0 auto}
 			.pp-field{width:520px;max-width:100%}
 			.pp-mono{font-family:Menlo,Consolas,monospace}
 			.pp-scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin:8px 0 4px}
 			@media(max-width:782px){.pp-scope-grid{grid-template-columns:1fr}}
 			.pp-scope{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa}
 			.pp-scope input{margin-top:2px}
-			.pp-scope .pp-scope-key{font-weight:600;text-transform:capitalize}
+			.pp-scope .pp-scope-key{font-weight:600;text-transform:capitalize;direction:ltr;display:inline-block}
 			.pp-scope .pp-scope-desc{color:#646970;font-size:12px;display:block;margin-top:2px}
 			.pp-badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
 			.pp-badge.on{background:#edfaef;color:#00794f;border:1px solid #b8e6c8}
 			.pp-badge.off{background:#fbeaea;color:#b32d2e;border:1px solid #f0c4c4}
 			.pp-pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
-			.pp-links .button{margin-right:6px}
+			.pp-links .button{margin-inline-end:6px}
 			.pp-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid #dcdcde;margin:10px 0 0}
-			.pp-tab{background:none;border:1px solid transparent;border-bottom:none;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#50575e;border-radius:6px 6px 0 0}
+			.pp-tab{background:none;border:1px solid transparent;border-bottom:none;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#50575e;border-start-start-radius:6px;border-start-end-radius:6px}
 			.pp-tab[aria-selected="true"]{background:#fff;border-color:#dcdcde;color:#1d2327;margin-bottom:-1px}
 			.pp-panel{display:none;padding:14px 0 0}
 			.pp-panel.is-active{display:block}
@@ -101,31 +118,68 @@ class PP_Admin {
 			.pp-copy{position:absolute;top:8px;inset-inline-end:8px}
 			.pp-chat{border:1px solid #dcdcde;border-radius:8px;background:#fff;height:460px;overflow-y:auto;padding:14px}
 			.pp-msg{margin:0 0 14px;display:flex;gap:10px;align-items:flex-start}
-			.pp-msg .pp-who{flex:0 0 62px;font-size:11px;font-weight:700;text-transform:uppercase;color:#787c82;padding-top:3px}
-			.pp-msg .pp-body{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word}
+			.pp-msg .pp-who{flex:0 0 68px;font-size:11px;font-weight:700;text-transform:uppercase;color:#787c82;padding-top:3px}
+			.pp-msg .pp-body{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word;unicode-bidi:plaintext}
 			.pp-msg.user .pp-body{background:#f0f6fc;border:1px solid #c5d9ed;border-radius:6px;padding:8px 12px}
-			.pp-tool{font-family:Menlo,Consolas,monospace;font-size:12px;background:#f6f7f7;border:1px solid #e0e0e0;border-inline-start:3px solid #2271b1;border-radius:4px;padding:6px 10px;margin:4px 0}
+			.pp-tool{font-family:Menlo,Consolas,monospace;font-size:12px;background:#f6f7f7;border:1px solid #e0e0e0;border-inline-start:3px solid #2271b1;border-radius:4px;padding:6px 10px;margin:4px 0;direction:ltr;text-align:left}
 			.pp-tool.err{border-inline-start-color:#d63638;background:#fcf0f1}
 			.pp-tool b{font-weight:600}
 			.pp-tool .pp-sum{color:#646970}
 			.pp-composer{display:flex;gap:8px;margin-top:10px}
-			.pp-composer textarea{flex:1;min-height:64px;font-family:inherit}
+			.pp-composer textarea{flex:1;min-height:64px;font-family:inherit;unicode-bidi:plaintext}
 			.pp-warn{background:#fcf9e8;border:1px solid #f0e6b8;border-radius:6px;padding:10px 12px;margin:10px 0;font-size:13px}
+
+			/*
+			 * Machine text is never right-to-left. Keys, endpoints, curl lines, TOML
+			 * and JSON stay LTR and left-aligned even when the admin is Persian,
+			 * Arabic or any other RTL locale — mirroring them makes them unreadable
+			 * and, worse, un-copyable in the right order.
+			 */
+			.pp-code,.pp-mono,
+			.pp-wrap input.code,.pp-wrap textarea.code,
+			.pp-wrap input[type="url"],.pp-wrap input[readonly].code{direction:ltr;text-align:left}
+			/* An inline LTR run: keeps a sequence of code spans in source order on RTL. */
+			.pp-ltr{direction:ltr;unicode-bidi:embed}
+			select.pp-ltr{text-align:left}
+			.pp-wrap code,.pp-wrap kbd{direction:ltr;display:inline-block;unicode-bidi:embed}
 		</style>
 		<?php
+	}
+
+	/**
+	 * Strings the inline scripts need. Kept here so the JS carries no English of
+	 * its own and the whole screen translates as one unit.
+	 *
+	 * @return array<string,string>
+	 */
+	private function js_strings() {
+		return array(
+			'copy'      => __( 'Copy', 'presspilot' ),
+			'copied'    => __( 'Copied', 'presspilot' ),
+			'working'   => __( 'Working…', 'presspilot' ),
+			'loading'   => __( 'Loading…', 'presspilot' ),
+			'you'       => __( 'You', 'presspilot' ),
+			'copilot'   => __( 'Copilot', 'presspilot' ),
+			'tools'     => __( 'Tools', 'presspilot' ),
+			'error'     => __( 'Error', 'presspilot' ),
+			'pickModel' => __( '— pick a model —', 'presspilot' ),
+			/* translators: %d: number of models returned by the provider. */
+			'nModels'   => __( '%d models', 'presspilot' ),
+			/* translators: %s: error message. */
+			'failed'    => __( 'Failed: %s', 'presspilot' ),
+		);
 	}
 
 	/** A dark code block with a copy button. */
 	private function code_block( $code, $id ) {
 		?>
 		<div class="pp-code"><button type="button" class="button button-small pp-copy"
-			onclick="navigator.clipboard.writeText(document.getElementById('<?php echo esc_attr( $id ); ?>').textContent);this.textContent='Copied ✓';">Copy</button><span id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $code ); ?></span></div>
+			onclick="navigator.clipboard.writeText(document.getElementById('<?php echo esc_attr( $id ); ?>').textContent);this.textContent='<?php echo esc_js( __( 'Copied', 'presspilot' ) ); ?> ✓';"><?php echo esc_html__( 'Copy', 'presspilot' ); ?></button><span id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $code ); ?></span></div>
 		<?php
 	}
 
 	private function hero( $sub = '' ) {
 		$product = defined( 'PP_PRODUCT' ) ? PP_PRODUCT : 'PressPilot';
-		$tagline = defined( 'PP_TAGLINE' ) ? PP_TAGLINE : '';
 		$version = defined( 'PP_VERSION' ) ? PP_VERSION : '';
 		?>
 		<div class="pp-hero">
@@ -136,14 +190,37 @@ class PP_Admin {
 					<?php if ( $version ) : ?><span class="pp-ver">v<?php echo esc_html( $version ); ?></span><?php endif; ?>
 					<?php if ( $sub ) : ?><span class="pp-tag">— <?php echo esc_html( $sub ); ?></span><?php endif; ?>
 				</h1>
-				<div class="pp-tag"><?php echo esc_html( $tagline ); ?></div>
+				<div class="pp-tag"><?php echo esc_html__( 'AI copilot for WordPress', 'presspilot' ); ?></div>
 			</div>
 		</div>
 		<?php
 	}
 
+	/** The shared footer credit line. */
+	private function footer_note() {
+		?>
+		<p class="pp-tag" style="margin-top:6px">
+			<?php echo esc_html( defined( 'PP_PRODUCT' ) ? PP_PRODUCT : 'PressPilot' ); ?> v<?php echo esc_html( defined( 'PP_VERSION' ) ? PP_VERSION : '' ); ?> · GPL-2.0-or-later ·
+			<a href="https://bobclub.ir" target="_blank" rel="noopener">bobclub.ir</a> ·
+			<a href="https://t.me/bob_club" target="_blank" rel="noopener"><?php echo esc_html__( 'Telegram', 'presspilot' ); ?></a> ·
+			<?php
+			printf(
+				/* translators: %s: link reading "Buy me a coffee". */
+				esc_html__( 'Enjoying it? %s', 'presspilot' ),
+				'<a href="https://bobclub.ir/coffee" target="_blank" rel="noopener">' . esc_html__( 'Buy me a coffee ☕', 'presspilot' ) . '</a>'
+			);
+			?>
+		</p>
+		<?php
+	}
+
 	/**
 	 * The ready-to-paste prompt the user hands to their AI agent.
+	 *
+	 * Intentionally NOT translated: it is read by a language model, not a person,
+	 * and it pairs with an English operating manual (the Skill). Handing a model
+	 * instructions in one language and its manual in another makes it worse at
+	 * the job, so this stays English on every locale.
 	 *
 	 * @param string $rest_url REST base URL.
 	 * @param string $key      API key.
@@ -174,9 +251,13 @@ What you can do
 Respect the site's Permissions: some capabilities may be turned off (see /site → scopes). After each change, fetch the live URL and verify it renders. Keep the API key secret.";
 	}
 
+	/* ------------------------------------------------------------------ */
+	/* Form handlers                                                      */
+	/* ------------------------------------------------------------------ */
+
 	public function handle_regenerate() {
 		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_regenerate' ) ) {
-			wp_die( 'Not allowed.' );
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
 		}
 		PP_Auth::regenerate_key();
 		wp_safe_redirect( add_query_arg( 'pp_regenerated', '1', admin_url( 'admin.php?page=presspilot-settings' ) ) );
@@ -185,7 +266,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 
 	public function handle_save_scopes() {
 		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_save_scopes' ) ) {
-			wp_die( 'Not allowed.' );
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
 		}
 		$enabled = isset( $_POST['pp_scopes'] ) && is_array( $_POST['pp_scopes'] )
 			? array_map( 'sanitize_key', wp_unslash( $_POST['pp_scopes'] ) )
@@ -199,6 +280,39 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 		wp_safe_redirect( add_query_arg( 'pp_scopes_saved', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
 		exit;
 	}
+
+	public function handle_save_mcp() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_save_mcp' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
+		}
+		update_option( PP_MCP::OPTION_ENABLED, ! empty( $_POST['pp_mcp_enabled'] ) ? '1' : '0', false );
+		update_option( PP_MCP::OPTION_URL_KEY, ! empty( $_POST['pp_mcp_url_key'] ) ? '1' : '0', false );
+		$profile = isset( $_POST['pp_tool_profile'] ) ? sanitize_key( wp_unslash( $_POST['pp_tool_profile'] ) ) : 'full';
+		update_option( PP_Tools::OPTION_PROFILE, 'essential' === $profile ? 'essential' : 'full', false );
+		wp_safe_redirect( add_query_arg( 'pp_saved', '1', admin_url( 'admin.php?page=presspilot-agents' ) ) );
+		exit;
+	}
+
+	public function handle_save_agent() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_save_agent' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
+		}
+		PP_Providers::save_config(
+			array(
+				'provider'  => isset( $_POST['pp_provider'] ) ? wp_unslash( $_POST['pp_provider'] ) : '',
+				'api_key'   => isset( $_POST['pp_api_key'] ) ? wp_unslash( $_POST['pp_api_key'] ) : '',
+				'model'     => isset( $_POST['pp_model'] ) ? wp_unslash( $_POST['pp_model'] ) : '',
+				'base_url'  => isset( $_POST['pp_base_url'] ) ? wp_unslash( $_POST['pp_base_url'] ) : '',
+				'max_steps' => isset( $_POST['pp_max_steps'] ) ? wp_unslash( $_POST['pp_max_steps'] ) : '',
+			)
+		);
+		wp_safe_redirect( add_query_arg( 'pp_saved', '1', admin_url( 'admin.php?page=presspilot-copilot' ) ) );
+		exit;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Connect                                                            */
+	/* ------------------------------------------------------------------ */
 
 	public function render() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -214,122 +328,125 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 		$this->styles();
 		?>
 		<div class="wrap pp-wrap">
-			<?php $this->hero( 'Connect' ); ?>
+			<?php $this->hero( __( 'Connect', 'presspilot' ) ); ?>
 
 			<?php if ( isset( $_GET['pp_regenerated'] ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>A new API key was generated. Update it wherever you use it (the prompt below already includes the new key).</p></div>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'A new API key was generated. Update it wherever you use it — the prompt below already contains the new key.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
 			<div class="pp-card" style="border-color:#c5d9ed;background:#f6fbff">
-				<h2><span class="dashicons dashicons-rest-api"></span> New in 2.0 — connect an agent directly</h2>
+				<h2><span class="dashicons dashicons-rest-api"></span> <?php echo esc_html__( 'Connect an agent directly', 'presspilot' ); ?></h2>
 				<p style="margin:0 0 10px">
-					Claude Code, OpenAI Codex, Cursor and any other MCP client can now plug straight into this site
-					and see it as native tools — no prompt to paste, no HTTP calls to write. Or connect a model
-					(Anthropic, OpenAI, OpenRouter, AgentRouter) and run the copilot right here in wp-admin.
+					<?php echo esc_html__( 'Claude Code, OpenAI Codex, Cursor and any other MCP client can plug straight into this site and see it as native tools — no prompt to paste, no HTTP calls to write. Or connect a model (Anthropic, OpenAI, OpenRouter, AgentRouter) and run the copilot right here in the dashboard.', 'presspilot' ); ?>
 				</p>
 				<div class="pp-links">
-					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-agents' ) ); ?>">Agents (MCP) →</a>
-					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-copilot' ) ); ?>">Built-in Copilot →</a>
+					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-agents' ) ); ?>"><?php echo esc_html__( 'Agents (MCP)', 'presspilot' ); ?> →</a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-copilot' ) ); ?>"><?php echo esc_html__( 'Built-in Copilot', 'presspilot' ); ?> →</a>
 				</div>
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="pp-step">1</span> Give your agent this prompt</h2>
-				<p class="description">For agents that don't speak MCP. Paste it into your AI agent — it already contains your live URL and API key.</p>
+				<h2><span class="pp-step">1</span> <?php echo esc_html__( 'Give your agent this prompt', 'presspilot' ); ?></h2>
+				<p class="description"><?php echo esc_html__( 'For agents that do not speak MCP. Paste it into your AI agent — it already contains your live URL and API key. The prompt is in English because it is read by a language model, not by you.', 'presspilot' ); ?></p>
 				<p>
 					<button type="button" class="button button-primary"
-						onclick="var t=document.getElementById('pp-prompt');t.select();document.execCommand('copy');this.textContent='Copied ✓';">Copy prompt</button>
+						onclick="var t=document.getElementById('pp-prompt');t.select();document.execCommand('copy');this.textContent='<?php echo esc_js( __( 'Copied', 'presspilot' ) ); ?> ✓';"><?php echo esc_html__( 'Copy prompt', 'presspilot' ); ?></button>
 				</p>
 				<textarea id="pp-prompt" readonly onclick="this.select()"
 					style="width:100%;height:280px;" class="pp-mono"><?php echo esc_textarea( $prompt ); ?></textarea>
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="pp-step">2</span> Connection details</h2>
+				<h2><span class="pp-step">2</span> <?php echo esc_html__( 'Connection details', 'presspilot' ); ?></h2>
 				<table class="form-table" role="presentation">
-					<tr><th scope="row">REST base URL</th><td>
+					<tr><th scope="row"><?php echo esc_html__( 'REST base URL', 'presspilot' ); ?></th><td>
 						<input type="text" class="regular-text code pp-field" readonly value="<?php echo esc_attr( $rest_url ); ?>" onclick="this.select()"></td></tr>
-					<tr><th scope="row">API key <span style="color:#d63638">(secret)</span></th><td>
+					<tr><th scope="row"><?php echo esc_html__( 'API key', 'presspilot' ); ?> <span style="color:#d63638"><?php echo esc_html__( '(secret)', 'presspilot' ); ?></span></th><td>
 						<input type="text" class="regular-text code pp-field" readonly value="<?php echo esc_attr( $key ); ?>" onclick="this.select()">
-						<p class="description">Header <code>X-PressPilot-Key</code>. Anyone with this key can edit everything the Permissions allow.</p></td></tr>
-					<tr><th scope="row">Access &amp; security</th><td>
+						<p class="description">
+						<?php
+						printf(
+							/* translators: %s: the HTTP header name, already formatted as code. */
+							esc_html__( 'Sent as the %s header. Anyone holding this key can change everything your Permissions allow.', 'presspilot' ),
+							'<code>X-PressPilot-Key</code>'
+						);
+						?>
+						</p></td></tr>
+					<tr><th scope="row"><?php echo esc_html__( 'Access &amp; security', 'presspilot' ); ?></th><td>
 						<?php $api_on = PP_Auth::is_enabled(); $ips = trim( PP_Auth::get_allowed_ips() ); ?>
 						<div class="pp-sec">
 							<span class="dashicons dashicons-shield"></span>
-							<span><span class="pp-dot <?php echo $api_on ? 'on' : 'off'; ?>"></span><strong>API <?php echo $api_on ? 'enabled' : 'disabled'; ?></strong></span>
+							<span><span class="pp-dot <?php echo $api_on ? 'on' : 'off'; ?>"></span><strong><?php echo $api_on ? esc_html__( 'API enabled', 'presspilot' ) : esc_html__( 'API disabled', 'presspilot' ); ?></strong></span>
 							<span style="color:#dcdcde">|</span>
-							<span>IP allow-list: <strong><?php echo $ips ? esc_html( count( preg_split( '/\s+/', $ips ) ) ) . ' address(es)' : 'off (any IP)'; ?></strong></span>
+							<span><?php echo esc_html__( 'IP allow-list:', 'presspilot' ); ?> <strong>
+								<?php
+								if ( $ips ) {
+									$count = count( preg_split( '/\s+/', $ips ) );
+									/* translators: %d: number of allowed IP addresses or ranges. */
+									echo esc_html( sprintf( _n( '%d address', '%d addresses', $count, 'presspilot' ), $count ) );
+								} else {
+									echo esc_html__( 'off (any IP)', 'presspilot' );
+								}
+								?>
+							</strong></span>
 							<span style="color:#dcdcde">|</span>
-							<span>Capabilities: <strong><?php echo empty( $off ) ? 'all enabled' : esc_html( count( $off ) ) . ' disabled'; ?></strong></span>
-							<a class="button button-small" href="<?php echo esc_url( $perm_url ); ?>" style="margin-left:auto">Manage on Permissions →</a>
+							<span><?php echo esc_html__( 'Capabilities:', 'presspilot' ); ?> <strong>
+								<?php
+								if ( empty( $off ) ) {
+									echo esc_html__( 'all enabled', 'presspilot' );
+								} else {
+									/* translators: %d: number of disabled capabilities. */
+									echo esc_html( sprintf( _n( '%d disabled', '%d disabled', count( $off ), 'presspilot' ), count( $off ) ) );
+								}
+								?>
+							</strong></span>
+							<a class="button button-small pp-push" href="<?php echo esc_url( $perm_url ); ?>"><?php echo esc_html__( 'Manage on Permissions', 'presspilot' ); ?> →</a>
 						</div>
-						<p class="description">Turn the whole API on/off and restrict it to specific IPs on the <a href="<?php echo esc_url( $perm_url ); ?>"><strong>Permissions</strong></a> screen (menu: <em>PressPilot → Permissions</em>).</p>
+						<p class="description">
+						<?php
+						printf(
+							/* translators: %s: link reading "Permissions". */
+							esc_html__( 'Turn the whole API on or off and restrict it to specific IP addresses on the %s screen.', 'presspilot' ),
+							'<a href="' . esc_url( $perm_url ) . '"><strong>' . esc_html__( 'Permissions', 'presspilot' ) . '</strong></a>'
+						);
+						?>
+						</p>
 					</td></tr>
 					<?php $theme = wp_get_theme(); ?>
-					<tr><th scope="row">Environment</th><td>
-						WordPress: <strong><?php echo esc_html( get_bloginfo( 'version' ) ); ?></strong> &nbsp;|&nbsp;
-						Theme: <strong><?php echo esc_html( $theme->get( 'Name' ) ); ?></strong> &nbsp;|&nbsp;
-						Block theme: <strong><?php echo PP_FSE::is_block_theme() ? 'yes' : 'no'; ?></strong></td></tr>
+					<tr><th scope="row"><?php echo esc_html__( 'Environment', 'presspilot' ); ?></th><td>
+						<?php echo esc_html__( 'WordPress:', 'presspilot' ); ?> <strong><?php echo esc_html( get_bloginfo( 'version' ) ); ?></strong> &nbsp;|&nbsp;
+						<?php echo esc_html__( 'Theme:', 'presspilot' ); ?> <strong><?php echo esc_html( $theme->get( 'Name' ) ); ?></strong> &nbsp;|&nbsp;
+						<?php echo esc_html__( 'Block theme:', 'presspilot' ); ?> <strong><?php echo PP_FSE::is_block_theme() ? esc_html__( 'yes', 'presspilot' ) : esc_html__( 'no', 'presspilot' ); ?></strong></td></tr>
 				</table>
 
 				<div class="pp-links">
-					<a class="button" href="<?php echo esc_url( $rest_url . '/skill' ); ?>" target="_blank">Skill (rules)</a>
-					<a class="button" href="<?php echo esc_url( $rest_url . '/openapi' ); ?>" target="_blank">OpenAPI spec</a>
-					<a class="button button-primary" href="<?php echo esc_url( $docs_url ); ?>">Full documentation</a>
+					<a class="button" href="<?php echo esc_url( $rest_url . '/skill' ); ?>" target="_blank"><?php echo esc_html__( 'Skill (rules)', 'presspilot' ); ?></a>
+					<a class="button" href="<?php echo esc_url( $rest_url . '/openapi' ); ?>" target="_blank"><?php echo esc_html__( 'OpenAPI spec', 'presspilot' ); ?></a>
+					<a class="button button-primary" href="<?php echo esc_url( $docs_url ); ?>"><?php echo esc_html__( 'Full documentation', 'presspilot' ); ?></a>
 				</div>
 
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-top:14px"
-					onsubmit="return confirm('Generate a new key? The old key will stop working immediately.');">
+					onsubmit="return confirm('<?php echo esc_js( __( 'Generate a new key? The old key stops working immediately.', 'presspilot' ) ); ?>');">
 					<input type="hidden" name="action" value="pp_regenerate">
 					<?php wp_nonce_field( 'pp_regenerate' ); ?>
-					<?php submit_button( 'Regenerate API Key', 'secondary', 'submit', false ); ?>
+					<?php submit_button( __( 'Regenerate API key', 'presspilot' ), 'secondary', 'submit', false ); ?>
 				</form>
 			</div>
 
 			<div class="pp-card">
-				<h2>Quick test</h2>
-				<p class="description">Run this from any terminal to confirm the connection works:</p>
+				<h2><?php echo esc_html__( 'Quick test', 'presspilot' ); ?></h2>
+				<p class="description"><?php echo esc_html__( 'Run this from any terminal to confirm the connection works:', 'presspilot' ); ?></p>
 				<textarea readonly class="code pp-mono" style="width:100%;height:56px;" onclick="this.select()">curl -s "<?php echo esc_url( $rest_url ); ?>/ping" -H "X-PressPilot-Key: <?php echo esc_attr( $key ); ?>"</textarea>
 			</div>
 
-			<p class="pp-tag" style="margin-top:6px">
-				<?php echo esc_html( defined( 'PP_PRODUCT' ) ? PP_PRODUCT : 'PressPilot' ); ?> v<?php echo esc_html( defined( 'PP_VERSION' ) ? PP_VERSION : '' ); ?> · GPL-2.0-or-later ·
-				<a href="https://bobclub.ir" target="_blank" rel="noopener">bobclub.ir</a> ·
-				<a href="https://t.me/bob_club" target="_blank" rel="noopener">Telegram</a> ·
-				Enjoying it? <a href="https://bobclub.ir/coffee" target="_blank" rel="noopener">Buy me a coffee ☕</a>
-			</p>
+			<?php $this->footer_note(); ?>
 		</div>
 		<?php
 	}
 
-	public function handle_save_mcp() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_save_mcp' ) ) {
-			wp_die( 'Not allowed.' );
-		}
-		update_option( PP_MCP::OPTION_ENABLED, ! empty( $_POST['pp_mcp_enabled'] ) ? '1' : '0', false );
-		update_option( PP_MCP::OPTION_URL_KEY, ! empty( $_POST['pp_mcp_url_key'] ) ? '1' : '0', false );
-		$profile = isset( $_POST['pp_tool_profile'] ) ? sanitize_key( wp_unslash( $_POST['pp_tool_profile'] ) ) : 'full';
-		update_option( PP_Tools::OPTION_PROFILE, 'essential' === $profile ? 'essential' : 'full', false );
-		wp_safe_redirect( add_query_arg( 'pp_saved', '1', admin_url( 'admin.php?page=presspilot-agents' ) ) );
-		exit;
-	}
-
-	public function handle_save_agent() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_save_agent' ) ) {
-			wp_die( 'Not allowed.' );
-		}
-		PP_Providers::save_config(
-			array(
-				'provider'  => isset( $_POST['pp_provider'] ) ? wp_unslash( $_POST['pp_provider'] ) : '',
-				'api_key'   => isset( $_POST['pp_api_key'] ) ? wp_unslash( $_POST['pp_api_key'] ) : '',
-				'model'     => isset( $_POST['pp_model'] ) ? wp_unslash( $_POST['pp_model'] ) : '',
-				'base_url'  => isset( $_POST['pp_base_url'] ) ? wp_unslash( $_POST['pp_base_url'] ) : '',
-				'max_steps' => isset( $_POST['pp_max_steps'] ) ? wp_unslash( $_POST['pp_max_steps'] ) : '',
-			)
-		);
-		wp_safe_redirect( add_query_arg( 'pp_saved', '1', admin_url( 'admin.php?page=presspilot-copilot' ) ) );
-		exit;
-	}
+	/* ------------------------------------------------------------------ */
+	/* Agents (MCP)                                                       */
+	/* ------------------------------------------------------------------ */
 
 	/**
 	 * Agents screen: the MCP endpoint plus copy-paste setup for each client.
@@ -346,41 +463,53 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 		$this->styles();
 		?>
 		<div class="wrap pp-wrap">
-			<?php $this->hero( 'Agents — direct MCP connection' ); ?>
+			<?php $this->hero( __( 'Agents — direct MCP connection', 'presspilot' ) ); ?>
 
 			<?php if ( isset( $_GET['pp_saved'] ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>Saved.</p></div>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Saved.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
 			<div class="pp-card">
-				<h2><span class="dashicons dashicons-rest-api"></span> Model Context Protocol endpoint</h2>
+				<h2><span class="dashicons dashicons-rest-api"></span> <?php echo esc_html__( 'Model Context Protocol endpoint', 'presspilot' ); ?></h2>
 				<p class="description">
-					MCP is the standard way an AI agent plugs into an external system. Point a client at this URL and
-					your site shows up inside it as <strong><?php echo count( $tools ); ?> native tools</strong> —
-					no prompt engineering, no hand-written HTTP calls. The agent Skill is delivered automatically on
-					connect, so agents follow this site's build rules from their first message.
+					<?php
+					printf(
+						/* translators: %s: the number of tools exposed, already wrapped in <strong>. */
+						esc_html__( 'MCP is the standard way an AI agent plugs into an external system. Point a client at this URL and your site shows up inside it as %s — no prompt engineering, no hand-written HTTP calls. The agent Skill is delivered automatically on connect, so agents follow this site\'s build rules from their first message.', 'presspilot' ),
+						'<strong>' . esc_html( sprintf( _n( '%d native tool', '%d native tools', count( $tools ), 'presspilot' ), count( $tools ) ) ) . '</strong>'
+					);
+					?>
 				</p>
 
 				<div class="pp-sec">
 					<span class="dashicons dashicons-<?php echo $on ? 'yes-alt' : 'dismiss'; ?>"></span>
-					<span><span class="pp-dot <?php echo $on ? 'on' : 'off'; ?>"></span><strong>MCP <?php echo $on ? 'enabled' : 'disabled'; ?></strong></span>
+					<span><span class="pp-dot <?php echo $on ? 'on' : 'off'; ?>"></span><strong><?php echo $on ? esc_html__( 'MCP enabled', 'presspilot' ) : esc_html__( 'MCP disabled', 'presspilot' ); ?></strong></span>
 					<span style="color:#dcdcde">|</span>
-					<span>Transport: <strong>Streamable HTTP</strong></span>
+					<span><?php echo esc_html__( 'Transport:', 'presspilot' ); ?> <strong><?php echo esc_html__( 'Streamable HTTP', 'presspilot' ); ?></strong></span>
 					<span style="color:#dcdcde">|</span>
-					<span>Tools exposed: <strong><?php echo count( $tools ); ?></strong> (<?php echo esc_html( PP_Tools::profile() ); ?> profile)</span>
+					<span><?php echo esc_html__( 'Tools exposed:', 'presspilot' ); ?> <strong><?php echo esc_html( number_format_i18n( count( $tools ) ) ); ?></strong>
+						(<?php echo 'essential' === PP_Tools::profile() ? esc_html__( 'essential profile', 'presspilot' ) : esc_html__( 'full profile', 'presspilot' ); ?>)</span>
 				</div>
 
 				<table class="form-table" role="presentation">
-					<tr><th scope="row">Endpoint URL</th><td>
+					<tr><th scope="row"><?php echo esc_html__( 'Endpoint URL', 'presspilot' ); ?></th><td>
 						<input type="text" class="regular-text code pp-field" readonly value="<?php echo esc_attr( $url ); ?>" onclick="this.select()"></td></tr>
-					<tr><th scope="row">Authentication</th><td>
+					<tr><th scope="row"><?php echo esc_html__( 'Authentication', 'presspilot' ); ?></th><td>
 						<code>Authorization: Bearer <?php echo esc_html( $key ); ?></code>
-						<p class="description">The same API key as the REST API. <code>X-PressPilot-Key</code> works too.</p></td></tr>
+						<p class="description">
+						<?php
+						printf(
+							/* translators: %s: alternative header name, formatted as code. */
+							esc_html__( 'The same API key as the REST API. %s works too.', 'presspilot' ),
+							'<code>X-PressPilot-Key</code>'
+						);
+						?>
+						</p></td></tr>
 				</table>
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="pp-step">1</span> Connect your agent</h2>
+				<h2><span class="pp-step">1</span> <?php echo esc_html__( 'Connect your agent', 'presspilot' ); ?></h2>
 				<div class="pp-tabs" role="tablist">
 					<?php $first = true; foreach ( $snippets as $slug => $snippet ) : ?>
 						<button type="button" class="pp-tab" role="tab" aria-selected="<?php echo $first ? 'true' : 'false'; ?>"
@@ -405,51 +534,84 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 				});
 				</script>
 				<p class="description" style="margin-top:10px">
-					Once connected, try: <em>“Read the PressPilot skill, then build me a pricing page with native blocks.”</em>
+					<?php
+					printf(
+						/* translators: %s: an example instruction to give the agent, already wrapped in <em>. */
+						esc_html__( 'Once connected, try: %s', 'presspilot' ),
+						'<em>' . esc_html__( '“Read the PressPilot skill, then build me a pricing page with native blocks.”', 'presspilot' ) . '</em>'
+					);
+					?>
 				</p>
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="pp-step">2</span> Settings</h2>
+				<h2><span class="pp-step">2</span> <?php echo esc_html__( 'Settings', 'presspilot' ); ?></h2>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="pp_save_mcp">
 					<?php wp_nonce_field( 'pp_save_mcp' ); ?>
 					<table class="form-table" role="presentation">
-						<tr><th scope="row">MCP endpoint</th><td>
+						<tr><th scope="row"><?php echo esc_html__( 'MCP endpoint', 'presspilot' ); ?></th><td>
 							<label><input type="checkbox" name="pp_mcp_enabled" value="1" <?php checked( $on ); ?>>
-								<strong>Enabled</strong> — accept MCP connections at the URL above.</label>
-							<p class="description">Turning this off leaves the REST API working; only the MCP endpoint stops answering.</p></td></tr>
-						<tr><th scope="row">Tool surface</th><td>
+								<strong><?php echo esc_html__( 'Enabled', 'presspilot' ); ?></strong> — <?php echo esc_html__( 'accept MCP connections at the URL above.', 'presspilot' ); ?></label>
+							<p class="description"><?php echo esc_html__( 'Turning this off leaves the REST API working; only the MCP endpoint stops answering.', 'presspilot' ); ?></p></td></tr>
+						<tr><th scope="row"><?php echo esc_html__( 'Tool surface', 'presspilot' ); ?></th><td>
 							<?php $profile = PP_Tools::profile(); ?>
 							<label style="display:block;margin-bottom:4px"><input type="radio" name="pp_tool_profile" value="full" <?php checked( 'full', $profile ); ?>>
-								<strong>Full</strong> — every tool, including plugin configuration, database and adapters.</label>
+								<strong><?php echo esc_html__( 'Full', 'presspilot' ); ?></strong> — <?php echo esc_html__( 'every tool, including plugin configuration, database and adapters.', 'presspilot' ); ?></label>
 							<label style="display:block"><input type="radio" name="pp_tool_profile" value="essential" <?php checked( 'essential', $profile ); ?>>
-								<strong>Essential</strong> — the core building set only. Fewer tools means less context and fewer wrong turns on small models.</label>
-							<p class="description">Tools for a capability you turned off on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-permissions' ) ); ?>">Permissions</a> screen are hidden either way.</p></td></tr>
-						<tr><th scope="row">Key in the URL</th><td>
-							<label><input type="checkbox" name="pp_mcp_url_key" value="1" <?php checked( PP_MCP::url_key_allowed() ); ?>>
-								Allow <code>?key=…</code> as an alternative to the <code>Authorization</code> header.</label>
+								<strong><?php echo esc_html__( 'Essential', 'presspilot' ); ?></strong> — <?php echo esc_html__( 'the core building set only. Fewer tools means less context and fewer wrong turns on smaller models.', 'presspilot' ); ?></label>
 							<p class="description">
-								For clients that accept only a URL. It also rescues setups where the server strips
-								<code>Authorization</code> headers (common on Apache CGI). <strong>The key then travels in the URL</strong>,
-								where server and proxy logs can record it — leave this off unless a client needs it.
+							<?php
+							printf(
+								/* translators: %s: link reading "Permissions". */
+								esc_html__( 'Tools for a capability you turned off on the %s screen are hidden either way.', 'presspilot' ),
+								'<a href="' . esc_url( admin_url( 'admin.php?page=presspilot-permissions' ) ) . '">' . esc_html__( 'Permissions', 'presspilot' ) . '</a>'
+							);
+							?>
+							</p></td></tr>
+						<tr><th scope="row"><?php echo esc_html__( 'Key in the URL', 'presspilot' ); ?></th><td>
+							<label><input type="checkbox" name="pp_mcp_url_key" value="1" <?php checked( PP_MCP::url_key_allowed() ); ?>>
+							<?php
+							printf(
+								/* translators: 1: the query parameter form, 2: the HTTP header name. Both formatted as code. */
+								esc_html__( 'Allow %1$s as an alternative to the %2$s header.', 'presspilot' ),
+								'<code>?key=…</code>',
+								'<code>Authorization</code>'
+							);
+							?>
+							</label>
+							<p class="description">
+								<?php echo esc_html__( 'For clients that accept only a URL. It also rescues setups where the server strips Authorization headers, which is common on Apache CGI.', 'presspilot' ); ?>
+								<strong><?php echo esc_html__( 'The key then travels in the URL', 'presspilot' ); ?></strong>,
+								<?php echo esc_html__( 'where server and proxy logs can record it — leave this off unless a client needs it.', 'presspilot' ); ?>
 							</p></td></tr>
 					</table>
-					<?php submit_button( 'Save MCP settings' ); ?>
+					<?php submit_button( __( 'Save MCP settings', 'presspilot' ) ); ?>
 				</form>
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="dashicons dashicons-admin-tools"></span> Tools currently exposed (<?php echo count( $tools ); ?>)</h2>
+				<h2><span class="dashicons dashicons-admin-tools"></span>
+					<?php
+					/* translators: %d: number of tools currently exposed. */
+					echo esc_html( sprintf( __( 'Tools currently exposed (%d)', 'presspilot' ), count( $tools ) ) );
+					?>
+				</h2>
 				<div class="pp-pill-row">
 					<?php foreach ( $tools as $name => $tool ) : ?>
 						<code title="<?php echo esc_attr( $tool['description'] ); ?>" style="background:#f0f6fc;border:1px solid #c5d9ed;border-radius:4px;padding:2px 7px;font-size:12px"><?php echo esc_html( $name ); ?></code>
 					<?php endforeach; ?>
 				</div>
 			</div>
+
+			<?php $this->footer_note(); ?>
 		</div>
 		<?php
 	}
+
+	/* ------------------------------------------------------------------ */
+	/* Copilot                                                            */
+	/* ------------------------------------------------------------------ */
 
 	/**
 	 * Copilot screen: pick a provider, then talk to the site directly.
@@ -465,23 +627,22 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 		$this->styles();
 		?>
 		<div class="wrap pp-wrap">
-			<?php $this->hero( 'Copilot' ); ?>
+			<?php $this->hero( __( 'Copilot', 'presspilot' ) ); ?>
 
 			<?php if ( isset( $_GET['pp_saved'] ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>Copilot settings saved.</p></div>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Copilot settings saved.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
 			<div class="pp-card">
-				<h2><span class="dashicons dashicons-admin-users"></span> Model provider</h2>
+				<h2><span class="dashicons dashicons-admin-users"></span> <?php echo esc_html__( 'Model provider', 'presspilot' ); ?></h2>
 				<p class="description">
-					Connect a model and the copilot runs the same tools an external agent gets over MCP,
-					under the same permissions and the same Skill — without leaving wp-admin.
+					<?php echo esc_html__( 'Connect a model and the copilot runs the same tools an external agent gets over MCP, under the same permissions and the same Skill — without leaving the dashboard.', 'presspilot' ); ?>
 				</p>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="pp_save_agent">
 					<?php wp_nonce_field( 'pp_save_agent' ); ?>
 					<table class="form-table" role="presentation">
-						<tr><th scope="row"><label for="pp_provider">Provider</label></th><td>
+						<tr><th scope="row"><label for="pp_provider"><?php echo esc_html__( 'Provider', 'presspilot' ); ?></label></th><td>
 							<select name="pp_provider" id="pp_provider" class="pp-field">
 								<?php foreach ( $providers as $slug => $provider ) : ?>
 									<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $slug, $config['provider'] ); ?>
@@ -491,50 +652,56 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 								<?php endforeach; ?>
 							</select>
 							<p class="description" id="pp-provider-note"><?php echo esc_html( $providers[ $config['provider'] ]['note'] ); ?></p></td></tr>
-						<tr><th scope="row"><label for="pp_api_key">API key</label></th><td>
+						<tr><th scope="row"><label for="pp_api_key"><?php echo esc_html__( 'API key', 'presspilot' ); ?></label></th><td>
 							<input type="password" name="pp_api_key" id="pp_api_key" class="regular-text code pp-field" autocomplete="off"
 								placeholder="<?php echo $config['api_key'] ? esc_attr( $config['api_key'] ) : 'sk-…'; ?>">
 							<p class="description">
-								Stored in this site's database and used only for these calls. Leave blank to keep the saved key.
+								<?php echo esc_html__( 'Stored in this site\'s database and used only for these calls. Leave blank to keep the saved key.', 'presspilot' ); ?>
 								<?php if ( $providers[ $config['provider'] ]['keys_url'] ) : ?>
-									<a href="<?php echo esc_url( $providers[ $config['provider'] ]['keys_url'] ); ?>" target="_blank" rel="noopener" id="pp-keys-link">Get a key →</a>
+									<a href="<?php echo esc_url( $providers[ $config['provider'] ]['keys_url'] ); ?>" target="_blank" rel="noopener" id="pp-keys-link"><?php echo esc_html__( 'Get a key', 'presspilot' ); ?> →</a>
 								<?php endif; ?>
 							</p></td></tr>
-						<tr><th scope="row"><label for="pp_model">Model</label></th><td>
+						<tr><th scope="row"><label for="pp_model"><?php echo esc_html__( 'Model', 'presspilot' ); ?></label></th><td>
 							<input type="text" name="pp_model" id="pp_model" class="regular-text code pp-field" value="<?php echo esc_attr( $config['model'] ); ?>" placeholder="claude-opus-5">
-							<button type="button" class="button" id="pp-load-models">Load available models</button>
-							<select id="pp-model-list" style="display:none;margin-top:6px" class="pp-field"></select>
-							<p class="description">Save your key first, then load the list — it comes from the provider, so it is never out of date.</p></td></tr>
-						<tr><th scope="row"><label for="pp_base_url">API base URL</label></th><td>
+							<button type="button" class="button" id="pp-load-models"><?php echo esc_html__( 'Load available models', 'presspilot' ); ?></button>
+							<select id="pp-model-list" style="display:none;margin-top:6px" class="pp-field pp-ltr"></select>
+							<p class="description"><?php echo esc_html__( 'Save your key first, then load the list — it comes from the provider, so it is never out of date.', 'presspilot' ); ?></p></td></tr>
+						<tr><th scope="row"><label for="pp_base_url"><?php echo esc_html__( 'API base URL', 'presspilot' ); ?></label></th><td>
 							<input type="text" name="pp_base_url" id="pp_base_url" class="regular-text code pp-field" value="<?php echo esc_attr( $config['base_url'] ); ?>">
-							<p class="description">Only change this for a self-hosted or gateway endpoint.</p></td></tr>
-						<tr><th scope="row"><label for="pp_max_steps">Step limit</label></th><td>
+							<p class="description"><?php echo esc_html__( 'Only change this for a self-hosted or gateway endpoint.', 'presspilot' ); ?></p></td></tr>
+						<tr><th scope="row"><label for="pp_max_steps"><?php echo esc_html__( 'Step limit', 'presspilot' ); ?></label></th><td>
 							<input type="number" name="pp_max_steps" id="pp_max_steps" min="1" max="40" value="<?php echo esc_attr( $config['max_steps'] ); ?>" class="small-text">
-							<p class="description">How many tool-calling rounds one request may take before the copilot stops and reports back.</p></td></tr>
+							<p class="description"><?php echo esc_html__( 'How many tool-calling rounds one request may take before the copilot stops and reports back.', 'presspilot' ); ?></p></td></tr>
 					</table>
-					<?php submit_button( 'Save provider' ); ?>
+					<?php submit_button( __( 'Save provider', 'presspilot' ) ); ?>
 				</form>
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="dashicons dashicons-format-chat"></span> Chat</h2>
+				<h2><span class="dashicons dashicons-format-chat"></span> <?php echo esc_html__( 'Chat', 'presspilot' ); ?></h2>
 				<?php if ( ! $config['configured'] ) : ?>
-					<div class="pp-warn">Add an API key and a model above to start using the copilot.</div>
+					<div class="pp-warn"><?php echo esc_html__( 'Add an API key and a model above to start using the copilot.', 'presspilot' ); ?></div>
 				<?php endif; ?>
 				<div class="pp-warn">
-					The copilot can change this site for real — create and delete content, edit settings, install plugins.
-					It works within the <a href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-permissions' ) ); ?>">Permissions</a> you set. Review what it proposes.
+					<?php echo esc_html__( 'The copilot can change this site for real — create and delete content, edit settings, install plugins.', 'presspilot' ); ?>
+					<?php
+					printf(
+						/* translators: %s: link reading "Permissions". */
+						esc_html__( 'It works within the %s you set. Review what it proposes.', 'presspilot' ),
+						'<a href="' . esc_url( admin_url( 'admin.php?page=presspilot-permissions' ) ) . '">' . esc_html__( 'Permissions', 'presspilot' ) . '</a>'
+					);
+					?>
 				</div>
 
 				<div class="pp-chat" id="pp-chat"></div>
 				<div class="pp-composer">
-					<textarea id="pp-input" placeholder="e.g. Build an About page with a hero, three feature cards and a contact section — native blocks, matching the current theme." <?php disabled( ! $config['configured'] ); ?>></textarea>
+					<textarea id="pp-input" placeholder="<?php echo esc_attr__( 'e.g. Build an About page with a hero, three feature cards and a contact section — native blocks, matching the current theme.', 'presspilot' ); ?>" <?php disabled( ! $config['configured'] ); ?>></textarea>
 					<div>
-						<button type="button" class="button button-primary" id="pp-send" <?php disabled( ! $config['configured'] ); ?>>Send</button><br>
-						<button type="button" class="button" id="pp-reset" style="margin-top:6px">Clear</button>
+						<button type="button" class="button button-primary" id="pp-send" <?php disabled( ! $config['configured'] ); ?>><?php echo esc_html__( 'Send', 'presspilot' ); ?></button><br>
+						<button type="button" class="button" id="pp-reset" style="margin-top:6px"><?php echo esc_html__( 'Clear', 'presspilot' ); ?></button>
 					</div>
 				</div>
-				<p class="description">Enter sends · Shift+Enter adds a line · the conversation lives in this browser tab only.</p>
+				<p class="description"><?php echo esc_html__( 'Enter sends · Shift+Enter adds a line · the conversation lives in this browser tab only.', 'presspilot' ); ?></p>
 			</div>
 
 			<script>
@@ -542,6 +709,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 				var REST = <?php echo wp_json_encode( $rest_url ); ?>;
 				var KEY = <?php echo wp_json_encode( $key ); ?>;
 				var MAX = <?php echo (int) $config['max_steps']; ?>;
+				var L = <?php echo wp_json_encode( $this->js_strings() ); ?>;
 				var chat = document.getElementById('pp-chat');
 				var input = document.getElementById('pp-input');
 				var send = document.getElementById('pp-send');
@@ -572,7 +740,6 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 					body.innerHTML = '<em style="color:#787c82">' + esc(text) + '</em>';
 					return body.parentNode;
 				}
-
 				function toolLine(call) {
 					var line = el('pp-tool' + (call.ok ? '' : ' err'));
 					line.innerHTML = (call.ok ? '✓ ' : '✕ ') + '<b>' + esc(call.name) + '</b> '
@@ -587,9 +754,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 						body: JSON.stringify(payload)
 					});
 					var data = await res.json();
-					if (!res.ok) {
-						throw new Error((data && data.message) || ('HTTP ' + res.status));
-					}
+					if (!res.ok) { throw new Error((data && data.message) || ('HTTP ' + res.status)); }
 					return data;
 				}
 
@@ -597,8 +762,8 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 					if (busy) { return; }
 					busy = true;
 					send.disabled = true;
-					bubble('You', 'user').textContent = prompt;
-					var thinking = status('Working…');
+					bubble(L.you, 'user').textContent = prompt;
+					var thinking = status(L.working);
 
 					try {
 						var payload = { prompt: prompt, messages: messages };
@@ -607,18 +772,15 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 							messages = data.messages;
 							payload = { messages: messages };
 
-							if (data.text) {
-								bubble('Copilot', 'assistant').textContent = data.text;
-							}
+							if (data.text) { bubble(L.copilot, 'assistant').textContent = data.text; }
 							if (data.tool_calls && data.tool_calls.length) {
-								var body = bubble('Tools', 'tools');
+								var body = bubble(L.tools, 'tools');
 								data.tool_calls.forEach(function (call) { body.appendChild(toolLine(call)); });
 							}
 							if (data.done) { break; }
 						}
 					} catch (e) {
-						var err = bubble('Error', 'error');
-						err.innerHTML = '<span style="color:#d63638">' + esc(e.message) + '</span>';
+						bubble(L.error, 'error').innerHTML = '<span style="color:#d63638">' + esc(e.message) + '</span>';
 					} finally {
 						thinking.remove();
 						busy = false;
@@ -657,13 +819,13 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 				if (loadModels) {
 					loadModels.addEventListener('click', async function () {
 						loadModels.disabled = true;
-						loadModels.textContent = 'Loading…';
+						loadModels.textContent = L.loading;
 						try {
 							var res = await fetch(REST + '/agent/models', { headers: { 'X-PressPilot-Key': KEY } });
 							var data = await res.json();
 							if (!res.ok) { throw new Error(data.message || ('HTTP ' + res.status)); }
 							var list = document.getElementById('pp-model-list');
-							list.innerHTML = '<option value="">— pick a model —</option>';
+							list.innerHTML = '<option value="">' + esc(L.pickModel) + '</option>';
 							data.models.forEach(function (id) {
 								var o = document.createElement('option');
 								o.value = id; o.textContent = id;
@@ -673,9 +835,9 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 							list.addEventListener('change', function () {
 								if (list.value) { document.getElementById('pp_model').value = list.value; }
 							});
-							loadModels.textContent = data.models.length + ' models';
+							loadModels.textContent = L.nModels.replace('%d', data.models.length);
 						} catch (e) {
-							loadModels.textContent = 'Failed: ' + e.message;
+							loadModels.textContent = L.failed.replace('%s', e.message);
 						} finally {
 							loadModels.disabled = false;
 						}
@@ -683,9 +845,15 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 				}
 			})();
 			</script>
+
+			<?php $this->footer_note(); ?>
 		</div>
 		<?php
 	}
+
+	/* ------------------------------------------------------------------ */
+	/* Permissions                                                        */
+	/* ------------------------------------------------------------------ */
 
 	/**
 	 * Permissions screen: toggle which capability groups the API key may use.
@@ -695,18 +863,27 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 			return;
 		}
 		$scopes = PP_Auth::get_scopes();
+		$labels = PP_Auth::scope_labels();
 		$this->styles();
 		?>
 		<div class="wrap pp-wrap">
-			<?php $this->hero( 'Permissions' ); ?>
+			<?php $this->hero( __( 'Permissions', 'presspilot' ) ); ?>
 
 			<?php if ( isset( $_GET['pp_scopes_saved'] ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>Permissions saved.</p></div>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Permissions saved.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
 			<div class="pp-card">
-				<h2><span class="dashicons dashicons-lock"></span> What the API is allowed to do</h2>
-				<p class="description">Everything is enabled by default. Turn off any capability you don't want the AI agent (API key) to touch. Requests to a disabled capability get a <code>403 pp_scope_disabled</code>.</p>
+				<h2><span class="dashicons dashicons-lock"></span> <?php echo esc_html__( 'What the API is allowed to do', 'presspilot' ); ?></h2>
+				<p class="description">
+					<?php
+					printf(
+						/* translators: %s: the HTTP error returned, formatted as code. */
+						esc_html__( 'Everything is enabled by default. Turn off any capability you do not want an AI agent to touch. Requests to a disabled capability get a %s, and its tools are hidden from the agent entirely.', 'presspilot' ),
+						'<code>403 pp_scope_disabled</code>'
+					);
+					?>
+				</p>
 
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="pp_save_scopes">
@@ -715,32 +892,57 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 					<?php $api_on = PP_Auth::is_enabled(); ?>
 					<table class="form-table" role="presentation">
 						<tr>
-							<th scope="row">API access</th>
+							<th scope="row"><?php echo esc_html__( 'API access', 'presspilot' ); ?></th>
 							<td>
 								<label>
 									<input type="checkbox" name="pp_api_enabled" value="1" <?php checked( $api_on ); ?>>
-									<strong><?php echo $api_on ? 'Enabled' : 'Disabled'; ?></strong> — master on/off switch for the whole REST API.
+									<strong><?php echo $api_on ? esc_html__( 'Enabled', 'presspilot' ) : esc_html__( 'Disabled', 'presspilot' ); ?></strong> — <?php echo esc_html__( 'master on/off switch for the whole REST API.', 'presspilot' ); ?>
 								</label>
-								<p class="description">When off, every API request is refused with <code>503 pp_api_disabled</code>. Use it to instantly cut off access.</p>
+								<p class="description">
+								<?php
+								printf(
+									/* translators: %s: the HTTP error returned, formatted as code. */
+									esc_html__( 'When off, every API request is refused with %s. Use it to cut off access instantly.', 'presspilot' ),
+									'<code>503 pp_api_disabled</code>'
+								);
+								?>
+								</p>
 							</td>
 						</tr>
 						<tr>
-							<th scope="row">IP allow-list <span style="color:#787c82">(optional)</span></th>
+							<th scope="row"><?php echo esc_html__( 'IP allow-list', 'presspilot' ); ?> <span style="color:#787c82"><?php echo esc_html__( '(optional)', 'presspilot' ); ?></span></th>
 							<td>
-								<textarea name="pp_allowed_ips" rows="3" class="large-text code" placeholder="e.g.&#10;203.0.113.5&#10;198.51.100.0/24"><?php echo esc_textarea( PP_Auth::get_allowed_ips() ); ?></textarea>
-								<p class="description">One IP or CIDR range per line. <strong>Leave empty to allow any IP.</strong> When set, only these addresses may use the API (others get <code>403 pp_ip_blocked</code>). Your current IP: <code><?php echo esc_html( PP_Auth::client_ip() ); ?></code></p>
+								<textarea name="pp_allowed_ips" rows="3" class="large-text code" placeholder="203.0.113.5&#10;198.51.100.0/24"><?php echo esc_textarea( PP_Auth::get_allowed_ips() ); ?></textarea>
+								<p class="description">
+									<?php echo esc_html__( 'One IP address or CIDR range per line.', 'presspilot' ); ?>
+									<strong><?php echo esc_html__( 'Leave empty to allow any IP.', 'presspilot' ); ?></strong>
+									<?php
+									printf(
+										/* translators: %s: the HTTP error returned, formatted as code. */
+										esc_html__( 'When set, only these addresses may use the API; others get %s.', 'presspilot' ),
+										'<code>403 pp_ip_blocked</code>'
+									);
+									?>
+									<?php
+									printf(
+										/* translators: %s: the visitor's current IP address, formatted as code. */
+										esc_html__( 'Your current IP: %s', 'presspilot' ),
+										'<code>' . esc_html( PP_Auth::client_ip() ) . '</code>'
+									);
+									?>
+								</p>
 							</td>
 						</tr>
 					</table>
 
-					<h3 style="margin:6px 0 2px">Capabilities</h3>
+					<h3 style="margin:6px 0 2px"><?php echo esc_html__( 'Capabilities', 'presspilot' ); ?></h3>
 					<div class="pp-pill-row">
-						<button type="button" class="button button-small" onclick="document.querySelectorAll('.pp-scope input').forEach(function(c){c.checked=true});">Enable all</button>
-						<button type="button" class="button button-small" onclick="document.querySelectorAll('.pp-scope input').forEach(function(c){c.checked=false});">Disable all</button>
+						<button type="button" class="button button-small" onclick="document.querySelectorAll('.pp-scope input').forEach(function(c){c.checked=true});"><?php echo esc_html__( 'Enable all', 'presspilot' ); ?></button>
+						<button type="button" class="button button-small" onclick="document.querySelectorAll('.pp-scope input').forEach(function(c){c.checked=false});"><?php echo esc_html__( 'Disable all', 'presspilot' ); ?></button>
 					</div>
 
 					<div class="pp-scope-grid">
-						<?php foreach ( PP_Auth::SCOPES as $key => $label ) : ?>
+						<?php foreach ( $labels as $key => $label ) : ?>
 							<label class="pp-scope">
 								<input type="checkbox" name="pp_scopes[]" value="<?php echo esc_attr( $key ); ?>" <?php checked( ! empty( $scopes[ $key ] ) ); ?>>
 								<span>
@@ -754,19 +956,46 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 					<div class="pp-scope" style="border-color:#d63638;background:#fcf0f1;margin-top:14px;align-items:flex-start">
 						<input type="checkbox" name="pp_allow_exec" value="1" <?php checked( '1' === (string) get_option( PP_Config::EXEC_OPTION, '0' ) ); ?>>
 						<span>
-							<span class="pp-scope-key" style="color:#d63638">Allow code execution (<code>/exec</code>)</span>
-							<span class="pp-scope-desc">Lets the API run arbitrary PHP — the universal fallback for configuring any plugin. <strong>Off by default.</strong> Only enable if you trust the API key holder completely; it is as powerful as installing a plugin. Requires the <code>config</code> scope above.</span>
+							<span class="pp-scope-key" style="color:#d63638"><?php echo esc_html__( 'Allow code execution', 'presspilot' ); ?> (<code>/exec</code>)</span>
+							<span class="pp-scope-desc">
+								<?php echo esc_html__( 'Lets the API run arbitrary PHP — the universal fallback for configuring any plugin.', 'presspilot' ); ?>
+								<strong><?php echo esc_html__( 'Off by default.', 'presspilot' ); ?></strong>
+								<?php
+								printf(
+									/* translators: %s: the capability name, formatted as code. */
+									esc_html__( 'Only enable it if you trust the API key holder completely; it is as powerful as installing a plugin. Requires the %s capability above.', 'presspilot' ),
+									'<code>config</code>'
+								);
+								?>
+							</span>
 						</span>
 					</div>
 
-					<p class="description" style="margin-top:10px">Discovery routes (<code>/ping</code>, <code>/site</code>, <code>/skill</code>, <code>/openapi</code>, <code>/widgets</code>, <code>/blocks</code>) are always available so an agent can inspect the site.</p>
+					<p class="description" style="margin-top:10px">
+						<?php
+						printf(
+							/* translators: %s: a list of always-available endpoints, formatted as code. */
+							esc_html__( 'Discovery routes (%s) are always available so an agent can inspect the site.', 'presspilot' ),
+							// One LTR run, not five: on an RTL locale a sequence of separate
+							// inline elements is laid out right-to-left, which would print the
+							// list backwards even though each item reads correctly.
+							'<span dir="ltr" class="pp-ltr"><code>/ping</code>, <code>/site</code>, <code>/skill</code>, <code>/openapi</code>, <code>/blocks</code></span>'
+						);
+						?>
+					</p>
 
-					<?php submit_button( 'Save permissions' ); ?>
+					<?php submit_button( __( 'Save permissions', 'presspilot' ) ); ?>
 				</form>
 			</div>
+
+			<?php $this->footer_note(); ?>
 		</div>
 		<?php
 	}
+
+	/* ------------------------------------------------------------------ */
+	/* API & Docs                                                         */
+	/* ------------------------------------------------------------------ */
 
 	/**
 	 * Render the bundled Skill / API documentation.
@@ -777,26 +1006,32 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 		}
 		$rest_url = rest_url( PP_REST_NS );
 		$path     = PP_PATH . 'docs/SKILL.md';
-		$md       = is_readable( $path ) ? file_get_contents( $path ) : 'Documentation file not found.';
+		$md       = is_readable( $path ) ? file_get_contents( $path ) : __( 'Documentation file not found.', 'presspilot' );
 		$this->styles();
 		?>
 		<div class="wrap pp-wrap">
-			<?php $this->hero( 'API & Agent Skill' ); ?>
+			<?php $this->hero( __( 'API & Agent Skill', 'presspilot' ) ); ?>
 			<div class="pp-card">
 				<p>
-					Hand this to any AI agent so it can build your site through the plugin's REST API.
-					It is also served at <code><?php echo esc_html( $rest_url ); ?>/skill</code>
-					(add <code>?format=markdown</code> for raw markdown).
+					<?php
+					printf(
+						/* translators: %s: the endpoint URL, formatted as code. */
+						esc_html__( 'Hand this to any AI agent so it can build your site through the plugin\'s REST API. It is also served at %s.', 'presspilot' ),
+						'<code class="pp-ltr">' . esc_html( $rest_url . '/skill' ) . '</code>'
+					);
+					?>
+					<?php echo esc_html__( 'The Skill is English on every locale: it is read by a language model, and translating it would make the model worse at the job.', 'presspilot' ); ?>
 				</p>
 				<div class="pp-links">
-					<button type="button" class="button" onclick="var t=document.getElementById('pp-skill');t.select();document.execCommand('copy');this.textContent='Copied!';">Copy all</button>
-					<a class="button" href="<?php echo esc_url( $rest_url . '/skill?format=markdown' ); ?>" target="_blank">Open raw Skill</a>
-					<a class="button button-primary" href="<?php echo esc_url( $rest_url . '/openapi' ); ?>" target="_blank">OpenAPI spec (JSON)</a>
+					<button type="button" class="button" onclick="var t=document.getElementById('pp-skill');t.select();document.execCommand('copy');this.textContent='<?php echo esc_js( __( 'Copied', 'presspilot' ) ); ?> ✓';"><?php echo esc_html__( 'Copy all', 'presspilot' ); ?></button>
+					<a class="button" href="<?php echo esc_url( $rest_url . '/skill?format=markdown' ); ?>" target="_blank"><?php echo esc_html__( 'Open raw Skill', 'presspilot' ); ?></a>
+					<a class="button button-primary" href="<?php echo esc_url( $rest_url . '/openapi' ); ?>" target="_blank"><?php echo esc_html__( 'OpenAPI spec (JSON)', 'presspilot' ); ?></a>
 				</div>
-				<p class="description">Import the OpenAPI spec into Swagger, Postman or an SDK generator. Public URL: <code><?php echo esc_html( $rest_url ); ?>/openapi</code></p>
 				<textarea id="pp-skill" readonly onclick="this.select()"
 					style="width:100%;height:620px;white-space:pre;overflow:auto;" class="pp-mono"><?php echo esc_textarea( $md ); ?></textarea>
 			</div>
+
+			<?php $this->footer_note(); ?>
 		</div>
 		<?php
 	}

@@ -3,10 +3,11 @@
  * Plugin Name:       PressPilot
  * Plugin URI:        https://bobclub.ir
  * Description:        An AI copilot for WordPress. Connect Claude Code, OpenAI Codex, OpenRouter or AgentRouter straight to your site over MCP — or use the built-in copilot — and let an agent build and manage everything: pages, posts, blocks, themes, menus, templates, media, settings and plugin configuration.
- * Version:           2.0.1
+ * Version:           2.1.0
  * Author:            Baabak Majd
  * Author URI:        https://bobclub.ir
  * Text Domain:       presspilot
+ * Domain Path:       /languages
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * License:           GPL-2.0-or-later
@@ -17,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PP_VERSION', '2.0.1' );
+define( 'PP_VERSION', '2.1.0' );
 define( 'PP_PRODUCT', 'PressPilot' );
 define( 'PP_TAGLINE', 'AI copilot for WordPress' );
 define( 'PP_FILE', __FILE__ );
@@ -53,6 +54,26 @@ function pp_activate() {
 	PP_Auth::maybe_generate_key();
 }
 register_activation_hook( __FILE__, 'pp_activate' );
+
+/**
+ * Load the dashboard translations.
+ *
+ * The language comes from WordPress alone — the site language in Settings, or a
+ * per-user language on the profile screen. The plugin adds no rewrite rules, no
+ * query parameters and no URL segments of its own, so translating it changes
+ * nothing about the addresses of this site. Right-to-left layout follows the
+ * same source: WordPress marks the admin `dir="rtl"` for an RTL locale and the
+ * plugin's stylesheet is written with logical properties, so it mirrors on its
+ * own with no separate RTL stylesheet to load.
+ *
+ * Hooked to `init` rather than `plugins_loaded`: translations must not be
+ * requested before WordPress has settled the locale, and every string here is
+ * used on an admin screen, long after this point.
+ */
+function pp_load_textdomain() {
+	load_plugin_textdomain( 'presspilot', false, dirname( plugin_basename( PP_FILE ) ) . '/languages' );
+}
+add_action( 'init', 'pp_load_textdomain' );
 
 /**
  * Boot the plugin.

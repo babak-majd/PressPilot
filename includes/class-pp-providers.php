@@ -32,6 +32,9 @@ class PP_Providers {
 	 * The providers offered in the admin. `api` selects the wire format;
 	 * everything else is presentation and defaults.
 	 *
+	 * Vendor names stay untranslated (they are brands); the explanatory notes
+	 * are shown to a human, so they follow the dashboard language.
+	 *
 	 * @return array<string,array>
 	 */
 	public static function providers() {
@@ -42,7 +45,7 @@ class PP_Providers {
 				'base_url'      => 'https://api.anthropic.com/v1',
 				'default_model' => 'claude-opus-5',
 				'keys_url'      => 'https://console.anthropic.com/settings/keys',
-				'note'          => 'Claude directly from Anthropic. Best tool-use reliability for long site builds.',
+				'note'          => __( 'Claude directly from Anthropic. Best tool-use reliability for long site builds.', 'presspilot' ),
 			),
 			'openai'      => array(
 				'label'         => 'OpenAI',
@@ -50,7 +53,7 @@ class PP_Providers {
 				'base_url'      => 'https://api.openai.com/v1',
 				'default_model' => '',
 				'keys_url'      => 'https://platform.openai.com/api-keys',
-				'note'          => 'The same key your Codex CLI uses.',
+				'note'          => __( 'The same key your Codex CLI uses.', 'presspilot' ),
 			),
 			'openrouter'  => array(
 				'label'         => 'OpenRouter',
@@ -58,7 +61,7 @@ class PP_Providers {
 				'base_url'      => 'https://openrouter.ai/api/v1',
 				'default_model' => '',
 				'keys_url'      => 'https://openrouter.ai/keys',
-				'note'          => 'One key, hundreds of models from every vendor. Model ids look like "anthropic/claude-sonnet-4.5".',
+				'note'          => __( 'One key, hundreds of models from every vendor. Model ids look like "anthropic/claude-sonnet-4.5".', 'presspilot' ),
 			),
 			'agentrouter' => array(
 				'label'         => 'AgentRouter',
@@ -66,15 +69,15 @@ class PP_Providers {
 				'base_url'      => 'https://agentrouter.org/v1',
 				'default_model' => '',
 				'keys_url'      => 'https://agentrouter.org/console/token',
-				'note'          => 'OpenAI-compatible gateway across many vendors.',
+				'note'          => __( 'OpenAI-compatible gateway across many vendors.', 'presspilot' ),
 			),
 			'custom'      => array(
-				'label'         => 'Custom (OpenAI-compatible)',
+				'label'         => __( 'Custom (OpenAI-compatible)', 'presspilot' ),
 				'api'           => 'openai',
 				'base_url'      => '',
 				'default_model' => '',
 				'keys_url'      => '',
-				'note'          => 'Any endpoint that speaks /chat/completions — a local Ollama or vLLM server, LiteLLM, a company gateway.',
+				'note'          => __( 'Any endpoint that speaks /chat/completions — a local Ollama or vLLM server, LiteLLM, a company gateway.', 'presspilot' ),
 			),
 		);
 	}
