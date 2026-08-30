@@ -3,12 +3,16 @@
 # This file is distributed under the same license as the PressPilot plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPilot 2.1.1\n"
+"Project-Id-Version: PressPilot 2.2.0\n"
 "Report-Msgid-Bugs-To: https://bobclub.ir\n"
+"POT-Creation-Date: 2026-08-30 22:28+0330\n"
+"Language: fa_IR\n"
+"PO-Revision-Date: 2026-08-30 22:30+0330\n"
+"Last-Translator: Baabak Majd <baabak.majd@gmail.com>\n"
+"Language-Team: Persian\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fa_IR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: PressPilot build\n"
 
@@ -135,16 +139,28 @@ msgid "Not allowed."
 msgstr "مجاز نیست."
 
 #: includes/class-pp-admin.php:334
-msgid "A new API key was generated. Update it wherever you use it — the prompt below already contains the new key."
-msgstr "کلید API تازه‌ای ساخته شد. هر جا از آن استفاده می‌کنید به‌روزرسانی کنید — متن پایین کلید جدید را دارد."
+msgid ""
+"A new API key was generated. Update it wherever you use it — the prompt "
+"below already contains the new key."
+msgstr ""
+"کلید API تازه‌ای ساخته شد. هر جا از آن استفاده می‌کنید به‌روزرسانی کنید — متن "
+"پایین کلید جدید را دارد."
 
 #: includes/class-pp-admin.php:338
 msgid "Connect an agent directly"
 msgstr "اتصال مستقیم یک عامل"
 
 #: includes/class-pp-admin.php:340
-msgid "Claude Code, OpenAI Codex, Cursor and any other MCP client can plug straight into this site and see it as native tools — no prompt to paste, no HTTP calls to write. Or connect a model (Anthropic, OpenAI, OpenRouter, AgentRouter) and run the copilot right here in the dashboard."
-msgstr "Claude Code، OpenAI Codex، Cursor و هر کلاینت MCP دیگری می‌توانند مستقیم به این سایت وصل شوند و آن را به شکل ابزارهای بومی ببینند — بدون متنی برای چسباندن و بدون درخواست HTTP دستی. یا یک مدل (Anthropic، OpenAI، OpenRouter، AgentRouter) وصل کنید و دستیار را همین‌جا در پیشخوان اجرا کنید."
+msgid ""
+"Claude Code, OpenAI Codex, Cursor and any other MCP client can plug straight "
+"into this site and see it as native tools — no prompt to paste, no HTTP "
+"calls to write. Or connect a model (Anthropic, OpenAI, OpenRouter, "
+"AgentRouter) and run the copilot right here in the dashboard."
+msgstr ""
+"Claude Code، OpenAI Codex، Cursor و هر کلاینت MCP دیگری می‌توانند مستقیم به "
+"این سایت وصل شوند و آن را به شکل ابزارهای بومی ببینند — بدون متنی برای "
+"چسباندن و بدون درخواست HTTP دستی. یا یک مدل (Anthropic، OpenAI، OpenRouter، "
+"AgentRouter) وصل کنید و دستیار را همین‌جا در پیشخوان اجرا کنید."
 
 #: includes/class-pp-admin.php:344
 msgid "Built-in Copilot"
@@ -155,8 +171,14 @@ msgid "Give your agent this prompt"
 msgstr "این متن را به عامل خود بدهید"
 
 #: includes/class-pp-admin.php:350
-msgid "For agents that do not speak MCP. Paste it into your AI agent — it already contains your live URL and API key. The prompt is in English because it is read by a language model, not by you."
-msgstr "برای عامل‌هایی که MCP نمی‌فهمند. آن را در عامل هوش مصنوعی خود بچسبانید — آدرس زنده و کلید API شما را دارد. متن به انگلیسی است چون یک مدل زبانی آن را می‌خواند، نه شما."
+msgid ""
+"For agents that do not speak MCP. Paste it into your AI agent — it already "
+"contains your live URL and API key. The prompt is in English because it is "
+"read by a language model, not by you."
+msgstr ""
+"برای عامل‌هایی که MCP نمی‌فهمند. آن را در عامل هوش مصنوعی خود بچسبانید — آدرس "
+"زنده و کلید API شما را دارد. متن به انگلیسی است چون یک مدل زبانی آن را "
+"می‌خواند، نه شما."
 
 #: includes/class-pp-admin.php:353
 msgid "Copy prompt"
@@ -181,8 +203,12 @@ msgstr "(محرمانه)"
 #. translators: %s: the HTTP header name, already formatted as code.
 #: includes/class-pp-admin.php:370
 #, php-format
-msgid "Sent as the %s header. Anyone holding this key can change everything your Permissions allow."
-msgstr "به‌صورت هدر %s فرستاده می‌شود. هر کسی این کلید را داشته باشد می‌تواند هر چیزی را که دسترسی‌ها اجازه می‌دهند تغییر دهد."
+msgid ""
+"Sent as the %s header. Anyone holding this key can change everything your "
+"Permissions allow."
+msgstr ""
+"به‌صورت هدر %s فرستاده می‌شود. هر کسی این کلید را داشته باشد می‌تواند هر چیزی "
+"را که دسترسی‌ها اجازه می‌دهند تغییر دهد."
 
 #: includes/class-pp-admin.php:375
 msgid "Access &amp; security"
@@ -235,7 +261,9 @@ msgstr "مدیریت در دسترسی‌ها"
 #. translators: %s: link reading "Permissions".
 #: includes/class-pp-admin.php:409
 #, php-format
-msgid "Turn the whole API on or off and restrict it to specific IP addresses on the %s screen."
+msgid ""
+"Turn the whole API on or off and restrict it to specific IP addresses on the "
+"%s screen."
 msgstr "کل API را از صفحهٔ %s روشن یا خاموش کنید و به IPهای مشخصی محدود کنید."
 
 #: includes/class-pp-admin.php:416
@@ -305,8 +333,18 @@ msgstr "نقطهٔ اتصال Model Context Protocol"
 #. translators: %s: the number of tools exposed, already wrapped in <strong>.
 #: includes/class-pp-admin.php:478
 #, php-format
-msgid "MCP is the standard way an AI agent plugs into an external system. Point a client at this URL and your site shows up inside it as %s — no prompt engineering, no hand-written HTTP calls. The agent Skill is delivered automatically on connect, so agents follow this site's build rules from their first message."
-msgstr "MCP روش استاندارد اتصال یک عامل هوش مصنوعی به یک سامانهٔ بیرونی است. کلاینت خود را به این آدرس وصل کنید تا سایت شما داخل آن به شکل %s ظاهر شود — بدون مهندسی پرامپت و بدون درخواست HTTP دستی. راهنمای عامل هنگام اتصال به‌صورت خودکار تحویل داده می‌شود، پس عامل‌ها از همان پیام اول قواعد ساخت این سایت را رعایت می‌کنند."
+msgid ""
+"MCP is the standard way an AI agent plugs into an external system. Point a "
+"client at this URL and your site shows up inside it as %s — no prompt "
+"engineering, no hand-written HTTP calls. The agent Skill is delivered "
+"automatically on connect, so agents follow this site's build rules from "
+"their first message."
+msgstr ""
+"MCP روش استاندارد اتصال یک عامل هوش مصنوعی به یک سامانهٔ بیرونی است. کلاینت "
+"خود را به این آدرس وصل کنید تا سایت شما داخل آن به شکل %s ظاهر شود — بدون "
+"مهندسی پرامپت و بدون درخواست HTTP دستی. راهنمای عامل هنگام اتصال به‌صورت "
+"خودکار تحویل داده می‌شود، پس عامل‌ها از همان پیام اول قواعد ساخت این سایت را "
+"رعایت می‌کنند."
 
 #: includes/class-pp-admin.php:479
 #, php-format
@@ -368,8 +406,10 @@ msgid "Once connected, try: %s"
 msgstr "پس از اتصال، این را امتحان کنید: %s"
 
 #: includes/class-pp-admin.php:541
-msgid "“Read the PressPilot skill, then build me a pricing page with native blocks.”"
-msgstr "«راهنمای PressPilot را بخوان، بعد یک صفحهٔ تعرفه با بلوک‌های بومی برایم بساز.»"
+msgid ""
+"“Read the PressPilot skill, then build me a pricing page with native blocks.”"
+msgstr ""
+"«راهنمای PressPilot را بخوان، بعد یک صفحهٔ تعرفه با بلوک‌های بومی برایم بساز.»"
 
 #: includes/class-pp-admin.php:548
 msgid "Settings"
@@ -388,8 +428,12 @@ msgid "accept MCP connections at the URL above."
 msgstr "اتصال‌های MCP روی آدرس بالا پذیرفته می‌شوند."
 
 #: includes/class-pp-admin.php:556
-msgid "Turning this off leaves the REST API working; only the MCP endpoint stops answering."
-msgstr "خاموش کردن این گزینه REST API را دست‌نخورده می‌گذارد؛ فقط نقطهٔ اتصال MCP پاسخ نمی‌دهد."
+msgid ""
+"Turning this off leaves the REST API working; only the MCP endpoint stops "
+"answering."
+msgstr ""
+"خاموش کردن این گزینه REST API را دست‌نخورده می‌گذارد؛ فقط نقطهٔ اتصال MCP پاسخ "
+"نمی‌دهد."
 
 #: includes/class-pp-admin.php:557
 msgid "Tool surface"
@@ -408,14 +452,20 @@ msgid "Essential"
 msgstr "ضروری"
 
 #: includes/class-pp-admin.php:562
-msgid "the core building set only. Fewer tools means less context and fewer wrong turns on smaller models."
-msgstr "فقط مجموعهٔ اصلی ساخت. ابزار کمتر یعنی زمینهٔ کمتر و خطای کمتر روی مدل‌های کوچک‌تر."
+msgid ""
+"the core building set only. Fewer tools means less context and fewer wrong "
+"turns on smaller models."
+msgstr ""
+"فقط مجموعهٔ اصلی ساخت. ابزار کمتر یعنی زمینهٔ کمتر و خطای کمتر روی مدل‌های "
+"کوچک‌تر."
 
 #. translators: %s: link reading "Permissions".
 #: includes/class-pp-admin.php:567
 #, php-format
-msgid "Tools for a capability you turned off on the %s screen are hidden either way."
-msgstr "ابزارهای هر قابلیتی که در صفحهٔ %s خاموش کرده باشید، در هر حالت پنهان می‌مانند."
+msgid ""
+"Tools for a capability you turned off on the %s screen are hidden either way."
+msgstr ""
+"ابزارهای هر قابلیتی که در صفحهٔ %s خاموش کرده باشید، در هر حالت پنهان می‌مانند."
 
 #: includes/class-pp-admin.php:572
 msgid "Key in the URL"
@@ -428,16 +478,24 @@ msgid "Allow %1$s as an alternative to the %2$s header."
 msgstr "اجازه دادن %1$s به‌عنوان جایگزین هدر %2$s."
 
 #: includes/class-pp-admin.php:584
-msgid "For clients that accept only a URL. It also rescues setups where the server strips Authorization headers, which is common on Apache CGI."
-msgstr "برای کلاینت‌هایی که فقط آدرس می‌پذیرند. همچنین سرورهایی را نجات می‌دهد که هدر Authorization را حذف می‌کنند — روی Apache CGI رایج است."
+msgid ""
+"For clients that accept only a URL. It also rescues setups where the server "
+"strips Authorization headers, which is common on Apache CGI."
+msgstr ""
+"برای کلاینت‌هایی که فقط آدرس می‌پذیرند. همچنین سرورهایی را نجات می‌دهد که هدر "
+"Authorization را حذف می‌کنند — روی Apache CGI رایج است."
 
 #: includes/class-pp-admin.php:585
 msgid "The key then travels in the URL"
 msgstr "در این حالت کلید داخل آدرس جابه‌جا می‌شود"
 
 #: includes/class-pp-admin.php:586
-msgid "where server and proxy logs can record it — leave this off unless a client needs it."
-msgstr "جایی که لاگ سرور و پراکسی می‌تواند آن را ثبت کند — تا وقتی کلاینتی لازم ندارد خاموش بگذارید."
+msgid ""
+"where server and proxy logs can record it — leave this off unless a client "
+"needs it."
+msgstr ""
+"جایی که لاگ سرور و پراکسی می‌تواند آن را ثبت کند — تا وقتی کلاینتی لازم ندارد "
+"خاموش بگذارید."
 
 #: includes/class-pp-admin.php:589
 msgid "Save MCP settings"
@@ -458,16 +516,25 @@ msgid "Model provider"
 msgstr "ارائه‌دهندهٔ مدل"
 
 #: includes/class-pp-admin.php:639
-msgid "Connect a model and the copilot runs the same tools an external agent gets over MCP, under the same permissions and the same Skill — without leaving the dashboard."
-msgstr "یک مدل وصل کنید تا دستیار همان ابزارهایی را اجرا کند که یک عامل بیرونی از راه MCP می‌گیرد، با همان دسترسی‌ها و همان راهنما — بدون خروج از پیشخوان."
+msgid ""
+"Connect a model and the copilot runs the same tools an external agent gets "
+"over MCP, under the same permissions and the same Skill — without leaving "
+"the dashboard."
+msgstr ""
+"یک مدل وصل کنید تا دستیار همان ابزارهایی را اجرا کند که یک عامل بیرونی از "
+"راه MCP می‌گیرد، با همان دسترسی‌ها و همان راهنما — بدون خروج از پیشخوان."
 
 #: includes/class-pp-admin.php:645
 msgid "Provider"
 msgstr "ارائه‌دهنده"
 
 #: includes/class-pp-admin.php:659
-msgid "Stored in this site's database and used only for these calls. Leave blank to keep the saved key."
-msgstr "در پایگاه دادهٔ همین سایت ذخیره می‌شود و فقط برای همین درخواست‌ها به کار می‌رود. برای نگه داشتن کلید ذخیره‌شده خالی بگذارید."
+msgid ""
+"Stored in this site's database and used only for these calls. Leave blank to "
+"keep the saved key."
+msgstr ""
+"در پایگاه دادهٔ همین سایت ذخیره می‌شود و فقط برای همین درخواست‌ها به کار می‌رود. "
+"برای نگه داشتن کلید ذخیره‌شده خالی بگذارید."
 
 #: includes/class-pp-admin.php:661
 msgid "Get a key"
@@ -482,8 +549,12 @@ msgid "Load available models"
 msgstr "بارگذاری مدل‌های موجود"
 
 #: includes/class-pp-admin.php:668
-msgid "Save your key first, then load the list — it comes from the provider, so it is never out of date."
-msgstr "اول کلید را ذخیره کنید، بعد فهرست را بگیرید — از خود ارائه‌دهنده می‌آید، پس هیچ‌وقت قدیمی نمی‌شود."
+msgid ""
+"Save your key first, then load the list — it comes from the provider, so it "
+"is never out of date."
+msgstr ""
+"اول کلید را ذخیره کنید، بعد فهرست را بگیرید — از خود ارائه‌دهنده می‌آید، پس "
+"هیچ‌وقت قدیمی نمی‌شود."
 
 #: includes/class-pp-admin.php:669
 msgid "API base URL"
@@ -498,8 +569,12 @@ msgid "Step limit"
 msgstr "سقف گام‌ها"
 
 #: includes/class-pp-admin.php:674
-msgid "How many tool-calling rounds one request may take before the copilot stops and reports back."
-msgstr "یک درخواست چند دور فراخوانی ابزار می‌تواند داشته باشد پیش از آنکه دستیار متوقف شود و گزارش دهد."
+msgid ""
+"How many tool-calling rounds one request may take before the copilot stops "
+"and reports back."
+msgstr ""
+"یک درخواست چند دور فراخوانی ابزار می‌تواند داشته باشد پیش از آنکه دستیار "
+"متوقف شود و گزارش دهد."
 
 #: includes/class-pp-admin.php:676
 msgid "Save provider"
@@ -514,18 +589,27 @@ msgid "Add an API key and a model above to start using the copilot."
 msgstr "برای شروع کار با دستیار، بالا یک کلید API و یک مدل وارد کنید."
 
 #: includes/class-pp-admin.php:686
-msgid "The copilot can change this site for real — create and delete content, edit settings, install plugins."
-msgstr "دستیار واقعاً می‌تواند این سایت را تغییر دهد — محتوا بسازد و حذف کند، تنظیمات را ویرایش کند، افزونه نصب کند."
+msgid ""
+"The copilot can change this site for real — create and delete content, edit "
+"settings, install plugins."
+msgstr ""
+"دستیار واقعاً می‌تواند این سایت را تغییر دهد — محتوا بسازد و حذف کند، تنظیمات "
+"را ویرایش کند، افزونه نصب کند."
 
 #. translators: %s: link reading "Permissions".
 #: includes/class-pp-admin.php:690
 #, php-format
 msgid "It works within the %s you set. Review what it proposes."
-msgstr "در چارچوب %s که تعیین کرده‌اید کار می‌کند. آنچه پیشنهاد می‌دهد را بررسی کنید."
+msgstr ""
+"در چارچوب %s که تعیین کرده‌اید کار می‌کند. آنچه پیشنهاد می‌دهد را بررسی کنید."
 
 #: includes/class-pp-admin.php:698
-msgid "e.g. Build an About page with a hero, three feature cards and a contact section — native blocks, matching the current theme."
-msgstr "مثلاً: یک صفحهٔ «دربارهٔ ما» با یک هدر بزرگ، سه کارت ویژگی و بخش تماس بساز — با بلوک‌های بومی و هماهنگ با پوستهٔ فعلی."
+msgid ""
+"e.g. Build an About page with a hero, three feature cards and a contact "
+"section — native blocks, matching the current theme."
+msgstr ""
+"مثلاً: یک صفحهٔ «دربارهٔ ما» با یک هدر بزرگ، سه کارت ویژگی و بخش تماس بساز — با "
+"بلوک‌های بومی و هماهنگ با پوستهٔ فعلی."
 
 #: includes/class-pp-admin.php:700
 msgid "Send"
@@ -536,8 +620,12 @@ msgid "Clear"
 msgstr "پاک کردن"
 
 #: includes/class-pp-admin.php:704
-msgid "Enter sends · Shift+Enter adds a line · the conversation lives in this browser tab only."
-msgstr "Enter می‌فرستد · Shift+Enter خط جدید می‌سازد · گفتگو فقط در همین تب مرورگر می‌ماند."
+msgid ""
+"Enter sends · Shift+Enter adds a line · the conversation lives in this "
+"browser tab only."
+msgstr ""
+"Enter می‌فرستد · Shift+Enter خط جدید می‌سازد · گفتگو فقط در همین تب مرورگر "
+"می‌ماند."
 
 #: includes/class-pp-admin.php:873
 msgid "Permissions saved."
@@ -550,8 +638,14 @@ msgstr "API اجازهٔ چه کارهایی دارد"
 #. translators: %s: the HTTP error returned, formatted as code.
 #: includes/class-pp-admin.php:882
 #, php-format
-msgid "Everything is enabled by default. Turn off any capability you do not want an AI agent to touch. Requests to a disabled capability get a %s, and its tools are hidden from the agent entirely."
-msgstr "به‌صورت پیش‌فرض همه‌چیز فعال است. هر قابلیتی را که نمی‌خواهید یک عامل هوش مصنوعی به آن دست بزند خاموش کنید. درخواست به یک قابلیت خاموش %s می‌گیرد و ابزارهایش کاملاً از دید عامل پنهان می‌شود."
+msgid ""
+"Everything is enabled by default. Turn off any capability you do not want an "
+"AI agent to touch. Requests to a disabled capability get a %s, and its tools "
+"are hidden from the agent entirely."
+msgstr ""
+"به‌صورت پیش‌فرض همه‌چیز فعال است. هر قابلیتی را که نمی‌خواهید یک عامل هوش مصنوعی "
+"به آن دست بزند خاموش کنید. درخواست به یک قابلیت خاموش %s می‌گیرد و ابزارهایش "
+"کاملاً از دید عامل پنهان می‌شود."
 
 #: includes/class-pp-admin.php:895
 msgid "API access"
@@ -568,8 +662,12 @@ msgstr "کلید اصلی روشن/خاموش برای کل REST API."
 #. translators: %s: the HTTP error returned, formatted as code.
 #: includes/class-pp-admin.php:905
 #, php-format
-msgid "When off, every API request is refused with %s. Use it to cut off access instantly."
-msgstr "وقتی خاموش باشد، هر درخواست API با %s رد می‌شود. برای قطع فوری دسترسی از آن استفاده کنید."
+msgid ""
+"When off, every API request is refused with %s. Use it to cut off access "
+"instantly."
+msgstr ""
+"وقتی خاموش باشد، هر درخواست API با %s رد می‌شود. برای قطع فوری دسترسی از آن "
+"استفاده کنید."
 
 #: includes/class-pp-admin.php:913
 msgid "IP allow-list"
@@ -591,7 +689,8 @@ msgstr "برای اجازه به همهٔ IPها خالی بگذارید."
 #: includes/class-pp-admin.php:922
 #, php-format
 msgid "When set, only these addresses may use the API; others get %s."
-msgstr "در صورت تنظیم، فقط این نشانی‌ها می‌توانند از API استفاده کنند؛ بقیه %s می‌گیرند."
+msgstr ""
+"در صورت تنظیم، فقط این نشانی‌ها می‌توانند از API استفاده کنند؛ بقیه %s می‌گیرند."
 
 #. translators: %s: the visitor's current IP address, formatted as code.
 #: includes/class-pp-admin.php:929
@@ -616,8 +715,12 @@ msgid "Allow code execution"
 msgstr "اجازهٔ اجرای کد"
 
 #: includes/class-pp-admin.php:961
-msgid "Lets the API run arbitrary PHP — the universal fallback for configuring any plugin."
-msgstr "به API اجازه می‌دهد PHP دلخواه اجرا کند — راه‌حل نهایی برای پیکربندی هر افزونه‌ای."
+msgid ""
+"Lets the API run arbitrary PHP — the universal fallback for configuring any "
+"plugin."
+msgstr ""
+"به API اجازه می‌دهد PHP دلخواه اجرا کند — راه‌حل نهایی برای پیکربندی هر "
+"افزونه‌ای."
 
 #: includes/class-pp-admin.php:962
 msgid "Off by default."
@@ -626,14 +729,20 @@ msgstr "به‌صورت پیش‌فرض خاموش."
 #. translators: %s: the capability name, formatted as code.
 #: includes/class-pp-admin.php:966
 #, php-format
-msgid "Only enable it if you trust the API key holder completely; it is as powerful as installing a plugin. Requires the %s capability above."
-msgstr "فقط وقتی فعال کنید که کاملاً به دارندهٔ کلید API اعتماد دارید؛ به اندازهٔ نصب یک افزونه قدرت دارد. به قابلیت %s در بالا نیاز دارد."
+msgid ""
+"Only enable it if you trust the API key holder completely; it is as powerful "
+"as installing a plugin. Requires the %s capability above."
+msgstr ""
+"فقط وقتی فعال کنید که کاملاً به دارندهٔ کلید API اعتماد دارید؛ به اندازهٔ نصب "
+"یک افزونه قدرت دارد. به قابلیت %s در بالا نیاز دارد."
 
 #. translators: %s: a list of always-available endpoints, formatted as code.
 #: includes/class-pp-admin.php:978
 #, php-format
-msgid "Discovery routes (%s) are always available so an agent can inspect the site."
-msgstr "مسیرهای شناسایی (%s) همیشه در دسترس‌اند تا یک عامل بتواند سایت را بررسی کند."
+msgid ""
+"Discovery routes (%s) are always available so an agent can inspect the site."
+msgstr ""
+"مسیرهای شناسایی (%s) همیشه در دسترس‌اند تا یک عامل بتواند سایت را بررسی کند."
 
 #: includes/class-pp-admin.php:987
 msgid "Save permissions"
@@ -650,12 +759,20 @@ msgstr "API و راهنمای عامل"
 #. translators: %s: the endpoint URL, formatted as code.
 #: includes/class-pp-admin.php:1019
 #, php-format
-msgid "Hand this to any AI agent so it can build your site through the plugin's REST API. It is also served at %s."
-msgstr "این را به هر عامل هوش مصنوعی بدهید تا بتواند سایت شما را از راه REST API افزونه بسازد. روی %s هم ارائه می‌شود."
+msgid ""
+"Hand this to any AI agent so it can build your site through the plugin's "
+"REST API. It is also served at %s."
+msgstr ""
+"این را به هر عامل هوش مصنوعی بدهید تا بتواند سایت شما را از راه REST API "
+"افزونه بسازد. روی %s هم ارائه می‌شود."
 
 #: includes/class-pp-admin.php:1023
-msgid "The Skill is English on every locale: it is read by a language model, and translating it would make the model worse at the job."
-msgstr "راهنما در هر زبانی انگلیسی می‌ماند: یک مدل زبانی آن را می‌خواند و ترجمه‌اش مدل را در کار ضعیف‌تر می‌کند."
+msgid ""
+"The Skill is English on every locale: it is read by a language model, and "
+"translating it would make the model worse at the job."
+msgstr ""
+"راهنما در هر زبانی انگلیسی می‌ماند: یک مدل زبانی آن را می‌خواند و ترجمه‌اش مدل "
+"را در کار ضعیف‌تر می‌کند."
 
 #: includes/class-pp-admin.php:1026
 msgid "Copy all"
@@ -702,57 +819,108 @@ msgid "Site settings (options, homepage, permalinks)"
 msgstr "تنظیمات سایت (گزینه‌ها، صفحهٔ نخست، پیوندهای یکتا)"
 
 #: includes/class-pp-auth.php:62
-msgid "Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)"
-msgstr "پیکربندی افزونه و سایت (خواندن/نوشتن هر گزینه، متا و ترم‌ها؛ عکس‌برداری/بازگردانی؛ شناسایی؛ پراکسی REST؛ آداپتور افزونه‌ها)"
+msgid ""
+"Plugin & site configuration (read/write any option, meta & terms; snapshots/"
+"restore; discovery; REST proxy; plugin adapters)"
+msgstr ""
+"پیکربندی افزونه و سایت (خواندن/نوشتن هر گزینه، متا و ترم‌ها؛ عکس‌برداری/"
+"بازگردانی؛ شناسایی؛ پراکسی REST؛ آداپتور افزونه‌ها)"
 
 #: includes/class-pp-mcp.php:662
-msgid "Run this once in your terminal, then start Claude Code and ask it to build. Add --scope user to make it available in every project."
-msgstr "این را یک بار در ترمینال اجرا کنید، بعد Claude Code را باز کنید و بخواهید بسازد. با افزودن --scope user در همهٔ پروژه‌ها در دسترس می‌شود."
+msgid ""
+"Run this once in your terminal, then start Claude Code and ask it to build. "
+"Add --scope user to make it available in every project."
+msgstr ""
+"این را یک بار در ترمینال اجرا کنید، بعد Claude Code را باز کنید و بخواهید "
+"بسازد. با افزودن --scope user در همهٔ پروژه‌ها در دسترس می‌شود."
 
 #: includes/class-pp-mcp.php:668
-msgid "Add this to ~/.codex/config.toml (a url key means a remote Streamable HTTP server). Export PRESSPILOT_KEY in your shell so the token stays out of the file."
-msgstr "این را به ~/.codex/config.toml اضافه کنید (کلید url یعنی سرور Streamable HTTP از راه دور). PRESSPILOT_KEY را در شل export کنید تا توکن داخل فایل نماند."
+msgid ""
+"Add this to ~/.codex/config.toml (a url key means a remote Streamable HTTP "
+"server). Export PRESSPILOT_KEY in your shell so the token stays out of the "
+"file."
+msgstr ""
+"این را به ~/.codex/config.toml اضافه کنید (کلید url یعنی سرور Streamable "
+"HTTP از راه دور). PRESSPILOT_KEY را در شل export کنید تا توکن داخل فایل "
+"نماند."
 
 #: includes/class-pp-mcp.php:674
-msgid "Add to .cursor/mcp.json in your project, or to the editor's global MCP settings."
-msgstr "به .cursor/mcp.json در پروژه‌تان اضافه کنید، یا به تنظیمات سراسری MCP ویرایشگر."
+msgid ""
+"Add to .cursor/mcp.json in your project, or to the editor's global MCP "
+"settings."
+msgstr ""
+"به .cursor/mcp.json در پروژه‌تان اضافه کنید، یا به تنظیمات سراسری MCP "
+"ویرایشگر."
 
 #: includes/class-pp-mcp.php:688
 msgid "Any client (URL only)"
 msgstr "هر کلاینتی (فقط آدرس)"
 
 #: includes/class-pp-mcp.php:691
-msgid "For clients that accept only a URL and no custom headers. The key travels in the URL, so it can end up in server and proxy logs — prefer a header where you can."
-msgstr "برای کلاینت‌هایی که فقط آدرس می‌پذیرند و هدر سفارشی نمی‌گیرند. کلید داخل آدرس جابه‌جا می‌شود، پس ممکن است در لاگ سرور و پراکسی ثبت شود — هر جا می‌توانید هدر را ترجیح دهید."
+msgid ""
+"For clients that accept only a URL and no custom headers. The key travels in "
+"the URL, so it can end up in server and proxy logs — prefer a header where "
+"you can."
+msgstr ""
+"برای کلاینت‌هایی که فقط آدرس می‌پذیرند و هدر سفارشی نمی‌گیرند. کلید داخل آدرس "
+"جابه‌جا می‌شود، پس ممکن است در لاگ سرور و پراکسی ثبت شود — هر جا می‌توانید هدر "
+"را ترجیح دهید."
 
 #: includes/class-pp-mcp.php:692
-msgid "Turn on \"Key in the URL\" below to use this form. It suits clients that accept only a URL and no custom headers."
-msgstr "برای استفاده از این حالت، گزینهٔ «کلید در آدرس» را در پایین روشن کنید. مناسب کلاینت‌هایی است که فقط آدرس می‌پذیرند و هدر سفارشی نمی‌گیرند."
+msgid ""
+"Turn on \"Key in the URL\" below to use this form. It suits clients that "
+"accept only a URL and no custom headers."
+msgstr ""
+"برای استفاده از این حالت، گزینهٔ «کلید در آدرس» را در پایین روشن کنید. مناسب "
+"کلاینت‌هایی است که فقط آدرس می‌پذیرند و هدر سفارشی نمی‌گیرند."
 
 #: includes/class-pp-providers.php:60
-msgid "Claude directly from Anthropic. Best tool-use reliability for long site builds."
-msgstr "Claude مستقیم از Anthropic. قابل‌اتکاترین گزینه در استفاده از ابزار برای ساخت‌های طولانی."
+msgid ""
+"Claude directly from Anthropic. Best tool-use reliability for long site "
+"builds."
+msgstr ""
+"Claude مستقیم از Anthropic. قابل‌اتکاترین گزینه در استفاده از ابزار برای "
+"ساخت‌های طولانی."
 
 #: includes/class-pp-providers.php:68
 msgid "The same key your Codex CLI uses."
 msgstr "همان کلیدی که Codex CLI شما استفاده می‌کند."
 
 #: includes/class-pp-providers.php:76
-msgid "One key, hundreds of models from every vendor. Model ids look like \"anthropic/claude-sonnet-4.5\"."
-msgstr "یک کلید، صدها مدل از همهٔ شرکت‌ها. شناسهٔ مدل‌ها شبیه «anthropic/claude-sonnet-4.5» است."
+msgid ""
+"One key, hundreds of models from every vendor. Model ids look like "
+"\"anthropic/claude-sonnet-4.5\"."
+msgstr ""
+"یک کلید، صدها مدل از همهٔ شرکت‌ها. شناسهٔ مدل‌ها شبیه «anthropic/claude-"
+"sonnet-4.5» است."
 
 #: includes/class-pp-providers.php:90
 msgid "OpenAI-compatible gateway across many vendors."
 msgstr "گیت‌وی سازگار با OpenAI روی چند ارائه‌دهنده."
 
-#: includes/class-pp-providers.php:93
+#: includes/class-pp-providers.php:98
+msgid ""
+"Open models (MiniMax, Kimi, DeepSeek) on a decentralised GPU network, at a "
+"fraction of the usual price. Model ids are namespaced, e.g. \"MiniMaxAI/"
+"MiniMax-M2.7\"."
+msgstr "مدل‌های متن‌باز (MiniMax، Kimi، DeepSeek) روی یک شبکهٔ غیرمتمرکز GPU، با کسری از قیمت معمول. شناسهٔ مدل‌ها فضای‌نام دارد، مثلاً «MiniMaxAI/MiniMax-M2.7»."
+
+#: includes/class-pp-providers.php:101
 msgid "Custom (OpenAI-compatible)"
 msgstr "سفارشی (سازگار با OpenAI)"
 
-#: includes/class-pp-providers.php:98
-msgid "Any endpoint that speaks /chat/completions — a local Ollama or vLLM server, LiteLLM, a company gateway."
-msgstr "هر نقطهٔ اتصالی که /chat/completions می‌فهمد — یک سرور محلی Ollama یا vLLM، LiteLLM، یا گیت‌وی سازمانی."
+#: includes/class-pp-providers.php:106
+msgid ""
+"Any endpoint that speaks /chat/completions — a local Ollama or vLLM server, "
+"LiteLLM, a company gateway."
+msgstr ""
+"هر نقطهٔ اتصالی که /chat/completions می‌فهمد — یک سرور محلی Ollama یا vLLM، "
+"LiteLLM، یا گیت‌وی سازمانی."
 
-#: includes/class-pp-providers.php:565
-msgid "The provider rejected the API key. It is usually expired, revoked, or out of credit; issue a fresh one in the provider's console and paste it above."
-msgstr "ارائه‌دهنده کلید API را نپذیرفت. معمولاً منقضی یا باطل شده یا اعتبارش تمام شده است؛ در کنسول ارائه‌دهنده یک کلید تازه بسازید و بالا وارد کنید."
+#: includes/class-pp-providers.php:573
+msgid ""
+"The provider rejected the API key. It is usually expired, revoked, or out of "
+"credit; issue a fresh one in the provider's console and paste it above."
+msgstr ""
+"ارائه‌دهنده کلید API را نپذیرفت. معمولاً منقضی یا باطل شده یا اعتبارش تمام شده "
+"است؛ در کنسول ارائه‌دهنده یک کلید تازه بسازید و بالا وارد کنید."

@@ -7,7 +7,7 @@
  * is the wire layer for that — it normalises two API shapes:
  *
  *   - Anthropic Messages   (api.anthropic.com)
- *   - OpenAI chat/completions, which OpenRouter and AgentRouter also speak
+ *   - OpenAI chat/completions, which OpenRouter, AgentRouter and Dahl also speak
  *
  * into one { text, tool_calls, assistant } result, so PP_Agent never has to care
  * which provider is configured.
@@ -88,6 +88,14 @@ class PP_Providers {
 				// be valid. Identify as a supported client so a valid key works.
 				'user_agent'    => 'claude-cli/1.0.0 (external, cli)',
 				'note'          => __( 'OpenAI-compatible gateway across many vendors.', 'presspilot' ),
+			),
+			'dahl'        => array(
+				'label'         => 'Dahl Inference',
+				'api'           => 'openai',
+				'base_url'      => 'https://inference.dahl.global/v1',
+				'default_model' => 'MiniMaxAI/MiniMax-M2.7',
+				'keys_url'      => 'https://inference.dahl.global/chatKeys',
+				'note'          => __( 'Open models (MiniMax, Kimi, DeepSeek) on a decentralised GPU network, at a fraction of the usual price. Model ids are namespaced, e.g. "MiniMaxAI/MiniMax-M2.7".', 'presspilot' ),
 			),
 			'custom'      => array(
 				'label'         => __( 'Custom (OpenAI-compatible)', 'presspilot' ),
@@ -343,7 +351,7 @@ class PP_Providers {
 		}
 
 		return array(
-			'text'       => $text,
+			'text'       => self::strip_reasoning( $text ),
 			'tool_calls' => $tool_calls,
 			// Echoed back verbatim, which also preserves thinking blocks and their
 			// signatures — a re-serialised copy would be rejected on the next turn.
@@ -395,12 +403,50 @@ class PP_Providers {
 		}
 
 		return array(
-			'text'       => is_string( $message['content'] ?? null ) ? $message['content'] : '',
+			'text'       => self::strip_reasoning( is_string( $message['content'] ?? null ) ? $message['content'] : '' ),
 			'tool_calls' => $tool_calls,
 			'assistant'  => $message,
 			'usage'      => isset( $data['usage'] ) ? $data['usage'] : array(),
 			'stop'       => isset( $data['choices'][0]['finish_reason'] ) ? (string) $data['choices'][0]['finish_reason'] : '',
 		);
+	}
+
+	/**
+	 * Strip inline reasoning blocks from text meant for display.
+	 *
+	 * Several open models (Kimi, DeepSeek, QwQ and friends) emit their chain of
+	 * thought inline as <think>…</think> inside the normal content field rather
+	 * than in a separate channel. It is not an answer and should never reach the
+	 * reader. Only the *displayed* text is cleaned — the assistant turn echoed
+	 * back into the conversation is left verbatim, so nothing the model relies on
+	 * is rewritten behind its back.
+	 *
+	 * @param string $text Raw content from the model.
+	 * @return string
+	 */
+	private static function strip_reasoning( $text ) {
+		if ( ! is_string( $text ) || '' === $text ) {
+			return '';
+		}
+		// Complete pairs first.
+		$clean = preg_replace( '#<think(?:ing)?\b[^>]*>.*?</think(?:ing)?>#is', '', $text );
+		if ( null === $clean ) {
+			$clean = $text; // A pathological input blew the backtracking limit; keep the original.
+		}
+		// A stray closing tag means the opener was lost (truncation, or a model that
+		// only emits the close). Everything before it is reasoning, so drop it.
+		if ( preg_match( '#</think(?:ing)?>#i', $clean, $m, PREG_OFFSET_CAPTURE ) ) {
+			$last = strripos( $clean, $m[0][0] );
+			if ( false !== $last ) {
+				$clean = substr( $clean, $last + strlen( $m[0][0] ) );
+			}
+		}
+		// An unclosed opener means the whole tail is reasoning with no answer yet.
+		$open = preg_match( '#<think(?:ing)?\b[^>]*>#i', $clean, $om, PREG_OFFSET_CAPTURE ) ? $om[0][1] : false;
+		if ( false !== $open ) {
+			$clean = substr( $clean, 0, $open );
+		}
+		return trim( $clean );
 	}
 
 	/* ------------------------------------------------------------------ */

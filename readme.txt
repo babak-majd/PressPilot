@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.1
+Stable tag: 2.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,14 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.2.1 =
+* Fix: the copilot chat showed raw markup. Models do not agree on a format — some answer in Markdown (`**bold**`), some in HTML, some mix the two — and the chat rendered every reply as plain text, so the markup itself was visible. Replies now go through one pipeline that converts Markdown, passes model-written HTML through, and filters the result against a strict allowlist (no script, no styles, no attributes beyond a validated `href`). Anything unrecognised is unwrapped to its text, so a stray tag reads as words rather than executing.
+* Fix: reasoning models (Kimi, DeepSeek and friends) emit their chain of thought inline as `<think>…</think>` in the normal content field. That is not an answer and is now stripped server-side, so headless callers of `/agent/run` get clean text too. Unclosed and orphaned tags are handled. The assistant turn echoed back into the conversation is left verbatim.
+* Chat code blocks and inline code stay left-to-right on an RTL dashboard.
+
+= 2.2.0 =
+* **New copilot provider: Dahl Inference** (`inference.dahl.global`) — open models (MiniMax M2.7, Kimi K2.6, DeepSeek V4 Flash) served over a decentralised GPU network at a fraction of the usual price, with the first 100M tokens free. OpenAI-compatible, so it plugs into the existing wire layer; pick it on the Copilot screen and *Load available models* lists what it currently serves. Model ids are namespaced, e.g. `MiniMaxAI/MiniMax-M2.7`.
 
 = 2.1.1 =
 * Fix: copilot errors were invisible behind a CDN. Provider failures returned HTTP 502, and Cloudflare (by default) replaces a 5xx from the origin with its own generic error page — so the plugin's actual diagnostic never reached the user, who just saw "error code: 502". Upstream failures now return **424 Failed Dependency**, a 4xx that proxies pass through untouched.

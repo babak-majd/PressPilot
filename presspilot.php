@@ -3,7 +3,7 @@
  * Plugin Name:       PressPilot
  * Plugin URI:        https://bobclub.ir
  * Description:        An AI copilot for WordPress. Connect Claude Code, OpenAI Codex, OpenRouter or AgentRouter straight to your site over MCP — or use the built-in copilot — and let an agent build and manage everything: pages, posts, blocks, themes, menus, templates, media, settings and plugin configuration.
- * Version:           2.1.1
+ * Version:           2.2.1
  * Author:            Baabak Majd
  * Author URI:        https://bobclub.ir
  * Text Domain:       presspilot
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PP_VERSION', '2.1.1' );
+define( 'PP_VERSION', '2.2.1' );
 define( 'PP_PRODUCT', 'PressPilot' );
 define( 'PP_TAGLINE', 'AI copilot for WordPress' );
 define( 'PP_FILE', __FILE__ );

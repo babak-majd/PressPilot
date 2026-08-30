@@ -121,6 +121,24 @@ class PP_Admin {
 			.pp-msg .pp-who{flex:0 0 68px;font-size:11px;font-weight:700;text-transform:uppercase;color:#787c82;padding-top:3px}
 			.pp-msg .pp-body{flex:1;min-width:0;white-space:pre-wrap;word-wrap:break-word;unicode-bidi:plaintext}
 			.pp-msg.user .pp-body{background:#f0f6fc;border:1px solid #c5d9ed;border-radius:6px;padding:8px 12px}
+			/* Rendered assistant markup. white-space:pre-wrap is for plain text, so
+			   turn it off once the text has become real elements. */
+			.pp-msg.assistant .pp-body{white-space:normal}
+			.pp-msg .pp-body>*:first-child{margin-top:0}
+			.pp-msg .pp-body>*:last-child{margin-bottom:0}
+			.pp-msg .pp-body p{margin:0 0 8px}
+			.pp-msg .pp-body h1,.pp-msg .pp-body h2,.pp-msg .pp-body h3,
+			.pp-msg .pp-body h4,.pp-msg .pp-body h5,.pp-msg .pp-body h6{margin:12px 0 6px;font-size:14px;line-height:1.4}
+			.pp-msg .pp-body ul,.pp-msg .pp-body ol{margin:0 0 8px;padding-inline-start:22px}
+			.pp-msg .pp-body li{margin:2px 0}
+			.pp-msg .pp-body blockquote{margin:6px 0;padding-inline-start:10px;border-inline-start:3px solid #dcdcde;color:#50575e}
+			.pp-msg .pp-body hr{border:0;border-top:1px solid #dcdcde;margin:10px 0}
+			.pp-msg .pp-body code{background:#f0f0f1;border-radius:3px;padding:1px 5px;font-family:Menlo,Consolas,monospace;font-size:12px;direction:ltr;unicode-bidi:embed}
+			.pp-msg .pp-body pre{background:#1d2327;color:#f0f0f1;border-radius:6px;padding:10px 12px;overflow:auto;margin:8px 0;direction:ltr;text-align:left}
+			.pp-msg .pp-body pre code{background:none;color:inherit;padding:0;font-size:12px}
+			.pp-msg .pp-body table{border-collapse:collapse;margin:8px 0;font-size:12px;display:block;overflow-x:auto;max-width:100%}
+			.pp-msg .pp-body th,.pp-msg .pp-body td{border:1px solid #dcdcde;padding:5px 9px;text-align:start;vertical-align:top}
+			.pp-msg .pp-body th{background:#f6f7f7;font-weight:600}
 			.pp-tool{font-family:Menlo,Consolas,monospace;font-size:12px;background:#f6f7f7;border:1px solid #e0e0e0;border-inline-start:3px solid #2271b1;border-radius:4px;padding:6px 10px;margin:4px 0;direction:ltr;text-align:left}
 			.pp-tool.err{border-inline-start-color:#d63638;background:#fcf0f1}
 			.pp-tool b{font-weight:600}
@@ -726,7 +744,133 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 					return String(s === undefined || s === null ? '' : s)
 						.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				}
-				function bubble(who, cls) {
+				// ---- Rich text ------------------------------------------------
+			// Models do not agree on a markup: some answer in Markdown, some in
+			// HTML, some mix the two mid-message. Rather than guess per provider,
+			// everything goes through one pipeline â€” Markdown is converted, any
+			// HTML the model wrote passes through it untouched, and the result is
+			// then filtered against a strict allowlist. Nothing the model emits can
+			// introduce script, styles, or attributes; anything unrecognised is
+			// unwrapped to its text, so a stray tag shows as words, never as markup.
+			var ALLOWED = {
+				P:[], BR:[], STRONG:[], B:[], EM:[], I:[], DEL:[], CODE:[], PRE:[],
+				UL:[], OL:[], LI:[], BLOCKQUOTE:[], HR:[],
+				TABLE:[], THEAD:[], TBODY:[], TR:[], TH:[], TD:[],
+				H1:[], H2:[], H3:[], H4:[], H5:[], H6:[], A:['href']
+			};
+
+			function mdInline(t) {
+				return t
+					.replace(/`([^`]+)`/g, function (_, c) { return '<code>' + c + '</code>'; })
+					.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+					.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+					.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
+			}
+
+			function markdown(src) {
+				var out = [], lines = String(src).split(/\r?\n/), i = 0, list = null;
+				function closeList() { if (list) { out.push('</' + list + '>'); list = null; } }
+				while (i < lines.length) {
+					var line = lines[i];
+					var fence = line.match(/^\s*```/);
+					if (fence) {                                   // fenced code, verbatim
+						closeList();
+						var buf = [];
+						i++;
+						while (i < lines.length && !/^\s*```/.test(lines[i])) { buf.push(lines[i]); i++; }
+						i++;
+						out.push('<pre><code>' + esc(buf.join('\n')) + '</code></pre>');
+						continue;
+					}
+					var h = line.match(/^(#{1,6})\s+(.*)$/);
+					if (h) { closeList(); out.push('<h' + h[1].length + '>' + mdInline(h[2]) + '</h' + h[1].length + '>'); i++; continue; }
+					if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { closeList(); out.push('<hr>'); i++; continue; }
+					var ul = line.match(/^\s*[-*+]\s+(.*)$/);
+					var ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+					if (ul || ol) {
+						var want = ul ? 'ul' : 'ol';
+						if (list !== want) { closeList(); out.push('<' + want + '>'); list = want; }
+						out.push('<li>' + mdInline((ul || ol)[1]) + '</li>');
+						i++; continue;
+					}
+					// GFM pipe table: a header row followed by a |---|---| divider.
+					if (/\|/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(lines[i + 1]) && /\|/.test(lines[i + 1])) {
+						closeList();
+						var cells = function (row) {
+							return row.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(function (c) { return mdInline(c.trim()); });
+						};
+						var head = cells(line);
+						i += 2;
+						var rows = [];
+						while (i < lines.length && lines[i].trim() && /\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+						var tbl = '<table><thead><tr>' + head.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead>';
+						if (rows.length) {
+							tbl += '<tbody>' + rows.map(function (r) {
+								return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>';
+							}).join('') + '</tbody>';
+						}
+						out.push(tbl + '</table>');
+						continue;
+					}
+					var q = line.match(/^\s*>\s?(.*)$/);
+					if (q) { closeList(); out.push('<blockquote>' + mdInline(q[1]) + '</blockquote>'); i++; continue; }
+					if (!line.trim()) { closeList(); i++; continue; }
+					closeList();
+					var para = [line];
+					i++;
+					while (i < lines.length && lines[i].trim() && !/^\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>|```)/.test(lines[i]) && !/\|/.test(lines[i])) { para.push(lines[i]); i++; }
+					var body = mdInline(para.join('\n')).replace(/\n/g, '<br>');
+					// A model answering in HTML already supplies its own block elements;
+					// wrapping those in <p> only makes the parser close it immediately and
+					// leave an empty paragraph behind.
+					out.push(/^\s*<\/?(p|div|ul|ol|li|pre|table|blockquote|h[1-6]|hr|section|article)\b/i.test(body)
+						? body
+						: '<p>' + body + '</p>');
+				}
+				closeList();
+				return out.join('');
+			}
+
+			function sanitize(html) {
+				var doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+				var root = doc.body.firstChild;
+				(function walk(node) {
+					var child = node.firstChild;
+					while (child) {
+						var next = child.nextSibling;
+						if (child.nodeType === 1) {
+							var allow = ALLOWED[child.tagName];
+							if (!allow) {
+								// Unknown tag: keep its text, drop the element itself.
+								while (child.firstChild) { node.insertBefore(child.firstChild, child); }
+								node.removeChild(child);
+							} else {
+								Array.prototype.slice.call(child.attributes).forEach(function (a) {
+									var keep = allow.indexOf(a.name) !== -1;
+									if (keep && a.name === 'href' && !/^https?:\/\//i.test(a.value)) { keep = false; }
+									if (!keep) { child.removeAttribute(a.name); }
+								});
+								if (child.tagName === 'A' && child.getAttribute('href')) {
+									child.setAttribute('target', '_blank');
+									child.setAttribute('rel', 'noopener noreferrer');
+								}
+								walk(child);
+							}
+						} else if (child.nodeType !== 3) {
+							node.removeChild(child); // comments, CDATA, anything else
+						}
+						child = next;
+					}
+				})(root);
+				Array.prototype.slice.call(root.querySelectorAll('p')).forEach(function (el) {
+					if (!el.textContent.trim() && !el.querySelector('*')) { el.remove(); }
+				});
+				return root.innerHTML;
+			}
+
+			function rich(text) { return sanitize(markdown(text)); }
+
+			function bubble(who, cls) {
 					var wrap = el('pp-msg ' + cls);
 					wrap.appendChild(el('pp-who', esc(who)));
 					var body = el('pp-body');
@@ -772,7 +916,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 							messages = data.messages;
 							payload = { messages: messages };
 
-							if (data.text) { bubble(L.copilot, 'assistant').textContent = data.text; }
+							if (data.text) { bubble(L.copilot, 'assistant').innerHTML = rich(data.text); }
 							if (data.tool_calls && data.tool_calls.length) {
 								var body = bubble(L.tools, 'tools');
 								data.tool_calls.forEach(function (call) { body.appendChild(toolLine(call)); });
