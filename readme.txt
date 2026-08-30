@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,9 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.2.2 =
+* Fix: the Copilot screen now notices when the plugin has been updated underneath it. Its behaviour ships inside the page it was served with, so a screen left open across an update kept running the old code — which looks exactly like a fix that did not work. It now checks the running version and says plainly that a reload is needed.
 
 = 2.2.1 =
 * Fix: the copilot chat showed raw markup. Models do not agree on a format — some answer in Markdown (`**bold**`), some in HTML, some mix the two — and the chat rendered every reply as plain text, so the markup itself was visible. Replies now go through one pipeline that converts Markdown, passes model-written HTML through, and filters the result against a strict allowlist (no script, no styles, no attributes beyond a validated `href`). Anything unrecognised is unwrapped to its text, so a stray tag reads as words rather than executing.

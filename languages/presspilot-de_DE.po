@@ -5,11 +5,11 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PressPilot 2.2.0\n"
 "Report-Msgid-Bugs-To: https://bobclub.ir\n"
-"POT-Creation-Date: 2026-08-30 22:28+0330\n"
-"Language: de_DE\n"
+"POT-Creation-Date: 2026-08-30 22:53+0330\n"
 "PO-Revision-Date: 2026-08-30 22:30+0330\n"
 "Last-Translator: Baabak Majd <baabak.majd@gmail.com>\n"
 "Language-Team: German\n"
+"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -23,7 +23,7 @@ msgid "%s — Connect"
 msgstr "%s — Verbinden"
 
 #: includes/class-pp-admin.php:61 includes/class-pp-admin.php:74
-#: includes/class-pp-admin.php:331
+#: includes/class-pp-admin.php:351
 msgid "Connect"
 msgstr "Verbinden"
 
@@ -33,7 +33,7 @@ msgstr "Verbinden"
 msgid "%s — Agents (MCP)"
 msgstr "%s — Agenten (MCP)"
 
-#: includes/class-pp-admin.php:63 includes/class-pp-admin.php:343
+#: includes/class-pp-admin.php:63 includes/class-pp-admin.php:363
 msgid "Agents (MCP)"
 msgstr "Agenten (MCP)"
 
@@ -43,8 +43,8 @@ msgstr "Agenten (MCP)"
 msgid "%s — Copilot"
 msgstr "%s — Copilot"
 
-#: includes/class-pp-admin.php:65 includes/class-pp-admin.php:162
-#: includes/class-pp-admin.php:630
+#: includes/class-pp-admin.php:65 includes/class-pp-admin.php:180
+#: includes/class-pp-admin.php:650
 msgid "Copilot"
 msgstr "Copilot"
 
@@ -54,9 +54,9 @@ msgstr "Copilot"
 msgid "%s — Permissions"
 msgstr "%s — Berechtigungen"
 
-#: includes/class-pp-admin.php:67 includes/class-pp-admin.php:410
-#: includes/class-pp-admin.php:568 includes/class-pp-admin.php:691
-#: includes/class-pp-admin.php:870
+#: includes/class-pp-admin.php:67 includes/class-pp-admin.php:430
+#: includes/class-pp-admin.php:588 includes/class-pp-admin.php:711
+#: includes/class-pp-admin.php:1035
 msgid "Permissions"
 msgstr "Berechtigungen"
 
@@ -70,75 +70,83 @@ msgstr "%s — API & Skill"
 msgid "API &amp; Docs"
 msgstr "API &amp; Doku"
 
-#: includes/class-pp-admin.php:157 includes/class-pp-admin.php:177
+#: includes/class-pp-admin.php:175 includes/class-pp-admin.php:197
 msgid "Copy"
 msgstr "Kopieren"
 
-#: includes/class-pp-admin.php:158 includes/class-pp-admin.php:177
-#: includes/class-pp-admin.php:353 includes/class-pp-admin.php:1026
+#: includes/class-pp-admin.php:176 includes/class-pp-admin.php:197
+#: includes/class-pp-admin.php:373 includes/class-pp-admin.php:1191
 msgid "Copied"
 msgstr "Kopiert"
 
-#: includes/class-pp-admin.php:159
+#: includes/class-pp-admin.php:177
 msgid "Working…"
 msgstr "Arbeitet…"
 
-#: includes/class-pp-admin.php:160
+#: includes/class-pp-admin.php:178
 msgid "Loading…"
 msgstr "Wird geladen…"
 
-#: includes/class-pp-admin.php:161
+#: includes/class-pp-admin.php:179
 msgid "You"
 msgstr "Du"
 
-#: includes/class-pp-admin.php:163
+#: includes/class-pp-admin.php:181
 msgid "Tools"
 msgstr "Werkzeuge"
 
-#: includes/class-pp-admin.php:164
+#: includes/class-pp-admin.php:182
 msgid "Error"
 msgstr "Fehler"
 
-#: includes/class-pp-admin.php:165
+#: includes/class-pp-admin.php:183
 msgid "— pick a model —"
 msgstr "— Modell wählen —"
 
+#. translators: %s: the new plugin version number.
+#: includes/class-pp-admin.php:185
+#, php-format
+msgid ""
+"PressPilot was updated to %s while this page was open. Reload the page — "
+"until you do, this screen is still running the old version."
+msgstr "PressPilot wurde auf %s aktualisiert, während diese Seite offen war. Lade die Seite neu — bis dahin läuft dieser Bildschirm weiter mit der alten Version."
+
 #. translators: %d: number of models returned by the provider.
-#: includes/class-pp-admin.php:167
+#: includes/class-pp-admin.php:187
 #, php-format
 msgid "%d models"
 msgstr "%d Modelle"
 
 #. translators: %s: error message.
-#: includes/class-pp-admin.php:169
+#: includes/class-pp-admin.php:189
 #, php-format
 msgid "Failed: %s"
 msgstr "Fehlgeschlagen: %s"
 
-#: includes/class-pp-admin.php:193
+#: includes/class-pp-admin.php:213
 msgid "AI copilot for WordPress"
 msgstr "KI-Copilot für WordPress"
 
-#: includes/class-pp-admin.php:205
+#: includes/class-pp-admin.php:225
 msgid "Telegram"
 msgstr "Telegram"
 
 #. translators: %s: link reading "Buy me a coffee".
-#: includes/class-pp-admin.php:209
+#: includes/class-pp-admin.php:229
 #, php-format
 msgid "Enjoying it? %s"
 msgstr "Gefällt es dir? %s"
 
-#: includes/class-pp-admin.php:210
+#: includes/class-pp-admin.php:230
 msgid "Buy me a coffee ☕"
 msgstr "Spendier mir einen Kaffee ☕"
 
-#: includes/class-pp-admin.php:260 includes/class-pp-admin.php:269
-#: includes/class-pp-admin.php:286 includes/class-pp-admin.php:298
+#: includes/class-pp-admin.php:280 includes/class-pp-admin.php:289
+#: includes/class-pp-admin.php:306 includes/class-pp-admin.php:318
 msgid "Not allowed."
 msgstr "Nicht erlaubt."
 
-#: includes/class-pp-admin.php:334
+#: includes/class-pp-admin.php:354
 msgid ""
 "A new API key was generated. Update it wherever you use it — the prompt "
 "below already contains the new key."
@@ -146,11 +154,11 @@ msgstr ""
 "Ein neuer API-Schlüssel wurde erzeugt. Aktualisiere ihn überall — der Prompt "
 "unten enthält bereits den neuen Schlüssel."
 
-#: includes/class-pp-admin.php:338
+#: includes/class-pp-admin.php:358
 msgid "Connect an agent directly"
 msgstr "Einen Agenten direkt verbinden"
 
-#: includes/class-pp-admin.php:340
+#: includes/class-pp-admin.php:360
 msgid ""
 "Claude Code, OpenAI Codex, Cursor and any other MCP client can plug straight "
 "into this site and see it as native tools — no prompt to paste, no HTTP "
@@ -163,15 +171,15 @@ msgstr ""
 "ein Modell (Anthropic, OpenAI, OpenRouter, AgentRouter) und nutze den "
 "Copilot direkt im Dashboard."
 
-#: includes/class-pp-admin.php:344
+#: includes/class-pp-admin.php:364
 msgid "Built-in Copilot"
 msgstr "Integrierter Copilot"
 
-#: includes/class-pp-admin.php:349
+#: includes/class-pp-admin.php:369
 msgid "Give your agent this prompt"
 msgstr "Gib deinem Agenten diesen Prompt"
 
-#: includes/class-pp-admin.php:350
+#: includes/class-pp-admin.php:370
 msgid ""
 "For agents that do not speak MCP. Paste it into your AI agent — it already "
 "contains your live URL and API key. The prompt is in English because it is "
@@ -181,28 +189,28 @@ msgstr ""
 "deine Live-URL und den API-Schlüssel. Der Prompt ist auf Englisch, weil ihn "
 "ein Sprachmodell liest, nicht du."
 
-#: includes/class-pp-admin.php:353
+#: includes/class-pp-admin.php:373
 msgid "Copy prompt"
 msgstr "Prompt kopieren"
 
-#: includes/class-pp-admin.php:360
+#: includes/class-pp-admin.php:380
 msgid "Connection details"
 msgstr "Verbindungsdaten"
 
-#: includes/class-pp-admin.php:362
+#: includes/class-pp-admin.php:382
 msgid "REST base URL"
 msgstr "REST-Basis-URL"
 
-#: includes/class-pp-admin.php:364 includes/class-pp-admin.php:655
+#: includes/class-pp-admin.php:384 includes/class-pp-admin.php:675
 msgid "API key"
 msgstr "API-Schlüssel"
 
-#: includes/class-pp-admin.php:364
+#: includes/class-pp-admin.php:384
 msgid "(secret)"
 msgstr "(geheim)"
 
 #. translators: %s: the HTTP header name, already formatted as code.
-#: includes/class-pp-admin.php:370
+#: includes/class-pp-admin.php:390
 #, php-format
 msgid ""
 "Sent as the %s header. Anyone holding this key can change everything your "
@@ -211,56 +219,56 @@ msgstr ""
 "Wird als %s-Header gesendet. Wer diesen Schlüssel hat, kann alles ändern, "
 "was deine Berechtigungen zulassen."
 
-#: includes/class-pp-admin.php:375
+#: includes/class-pp-admin.php:395
 msgid "Access &amp; security"
 msgstr "Zugriff &amp; Sicherheit"
 
-#: includes/class-pp-admin.php:379
+#: includes/class-pp-admin.php:399
 msgid "API enabled"
 msgstr "API aktiviert"
 
-#: includes/class-pp-admin.php:379
+#: includes/class-pp-admin.php:399
 msgid "API disabled"
 msgstr "API deaktiviert"
 
-#: includes/class-pp-admin.php:381
+#: includes/class-pp-admin.php:401
 msgid "IP allow-list:"
 msgstr "IP-Freigabeliste:"
 
 #. translators: %d: number of allowed IP addresses or ranges.
-#: includes/class-pp-admin.php:386
+#: includes/class-pp-admin.php:406
 #, php-format
 msgid "%d address"
 msgid_plural "%d addresses"
 msgstr[0] "%d Adresse"
 msgstr[1] "%d Adressen"
 
-#: includes/class-pp-admin.php:388
+#: includes/class-pp-admin.php:408
 msgid "off (any IP)"
 msgstr "aus (jede IP)"
 
-#: includes/class-pp-admin.php:393
+#: includes/class-pp-admin.php:413
 msgid "Capabilities:"
 msgstr "Fähigkeiten:"
 
-#: includes/class-pp-admin.php:396
+#: includes/class-pp-admin.php:416
 msgid "all enabled"
 msgstr "alle aktiviert"
 
 #. translators: %d: number of disabled capabilities.
-#: includes/class-pp-admin.php:399
+#: includes/class-pp-admin.php:419
 #, php-format
 msgid "%d disabled"
 msgid_plural "%d disabled"
 msgstr[0] "%d deaktiviert"
 msgstr[1] "%d deaktiviert"
 
-#: includes/class-pp-admin.php:403
+#: includes/class-pp-admin.php:423
 msgid "Manage on Permissions"
 msgstr "In Berechtigungen verwalten"
 
 #. translators: %s: link reading "Permissions".
-#: includes/class-pp-admin.php:409
+#: includes/class-pp-admin.php:429
 #, php-format
 msgid ""
 "Turn the whole API on or off and restrict it to specific IP addresses on the "
@@ -269,74 +277,74 @@ msgstr ""
 "Schalte die gesamte API auf dem Bildschirm %s ein oder aus und beschränke "
 "sie auf bestimmte IP-Adressen."
 
-#: includes/class-pp-admin.php:416
+#: includes/class-pp-admin.php:436
 msgid "Environment"
 msgstr "Umgebung"
 
-#: includes/class-pp-admin.php:417
+#: includes/class-pp-admin.php:437
 msgid "WordPress:"
 msgstr "WordPress:"
 
-#: includes/class-pp-admin.php:418
+#: includes/class-pp-admin.php:438
 msgid "Theme:"
 msgstr "Theme:"
 
-#: includes/class-pp-admin.php:419
+#: includes/class-pp-admin.php:439
 msgid "Block theme:"
 msgstr "Block-Theme:"
 
-#: includes/class-pp-admin.php:419
+#: includes/class-pp-admin.php:439
 msgid "yes"
 msgstr "ja"
 
-#: includes/class-pp-admin.php:419
+#: includes/class-pp-admin.php:439
 msgid "no"
 msgstr "nein"
 
-#: includes/class-pp-admin.php:423
+#: includes/class-pp-admin.php:443
 msgid "Skill (rules)"
 msgstr "Skill (Regeln)"
 
-#: includes/class-pp-admin.php:424
+#: includes/class-pp-admin.php:444
 msgid "OpenAPI spec"
 msgstr "OpenAPI-Spezifikation"
 
-#: includes/class-pp-admin.php:425
+#: includes/class-pp-admin.php:445
 msgid "Full documentation"
 msgstr "Vollständige Dokumentation"
 
-#: includes/class-pp-admin.php:429
+#: includes/class-pp-admin.php:449
 msgid "Generate a new key? The old key stops working immediately."
 msgstr ""
 "Neuen Schlüssel erzeugen? Der alte Schlüssel funktioniert sofort nicht mehr."
 
-#: includes/class-pp-admin.php:432
+#: includes/class-pp-admin.php:452
 msgid "Regenerate API key"
 msgstr "API-Schlüssel neu erzeugen"
 
-#: includes/class-pp-admin.php:437
+#: includes/class-pp-admin.php:457
 msgid "Quick test"
 msgstr "Schnelltest"
 
-#: includes/class-pp-admin.php:438
+#: includes/class-pp-admin.php:458
 msgid "Run this from any terminal to confirm the connection works:"
 msgstr ""
 "Führe dies in einem beliebigen Terminal aus, um die Verbindung zu prüfen:"
 
-#: includes/class-pp-admin.php:466
+#: includes/class-pp-admin.php:486
 msgid "Agents — direct MCP connection"
 msgstr "Agenten — direkte MCP-Verbindung"
 
-#: includes/class-pp-admin.php:469
+#: includes/class-pp-admin.php:489
 msgid "Saved."
 msgstr "Gespeichert."
 
-#: includes/class-pp-admin.php:473
+#: includes/class-pp-admin.php:493
 msgid "Model Context Protocol endpoint"
 msgstr "Model-Context-Protocol-Endpunkt"
 
 #. translators: %s: the number of tools exposed, already wrapped in <strong>.
-#: includes/class-pp-admin.php:478
+#: includes/class-pp-admin.php:498
 #, php-format
 msgid ""
 "MCP is the standard way an AI agent plugs into an external system. Point a "
@@ -352,90 +360,90 @@ msgstr ""
 "sodass Agenten die Build-Regeln dieser Website ab der ersten Nachricht "
 "befolgen."
 
-#: includes/class-pp-admin.php:479
+#: includes/class-pp-admin.php:499
 #, php-format
 msgid "%d native tool"
 msgid_plural "%d native tools"
 msgstr[0] "%d natives Werkzeug"
 msgstr[1] "%d native Werkzeuge"
 
-#: includes/class-pp-admin.php:486
+#: includes/class-pp-admin.php:506
 msgid "MCP enabled"
 msgstr "MCP aktiviert"
 
-#: includes/class-pp-admin.php:486
+#: includes/class-pp-admin.php:506
 msgid "MCP disabled"
 msgstr "MCP deaktiviert"
 
-#: includes/class-pp-admin.php:488
+#: includes/class-pp-admin.php:508
 msgid "Transport:"
 msgstr "Transport:"
 
-#: includes/class-pp-admin.php:488
+#: includes/class-pp-admin.php:508
 msgid "Streamable HTTP"
 msgstr "Streamable HTTP"
 
-#: includes/class-pp-admin.php:490
+#: includes/class-pp-admin.php:510
 msgid "Tools exposed:"
 msgstr "Bereitgestellte Werkzeuge:"
 
-#: includes/class-pp-admin.php:491
+#: includes/class-pp-admin.php:511
 msgid "essential profile"
 msgstr "Essential-Profil"
 
-#: includes/class-pp-admin.php:491
+#: includes/class-pp-admin.php:511
 msgid "full profile"
 msgstr "Voll-Profil"
 
-#: includes/class-pp-admin.php:495
+#: includes/class-pp-admin.php:515
 msgid "Endpoint URL"
 msgstr "Endpunkt-URL"
 
-#: includes/class-pp-admin.php:497
+#: includes/class-pp-admin.php:517
 msgid "Authentication"
 msgstr "Authentifizierung"
 
 #. translators: %s: alternative header name, formatted as code.
-#: includes/class-pp-admin.php:503
+#: includes/class-pp-admin.php:523
 #, php-format
 msgid "The same API key as the REST API. %s works too."
 msgstr ""
 "Derselbe API-Schlüssel wie für die REST-API. %s funktioniert ebenfalls."
 
-#: includes/class-pp-admin.php:512
+#: includes/class-pp-admin.php:532
 msgid "Connect your agent"
 msgstr "Verbinde deinen Agenten"
 
 #. translators: %s: an example instruction to give the agent, already wrapped in <em>.
-#: includes/class-pp-admin.php:540
+#: includes/class-pp-admin.php:560
 #, php-format
 msgid "Once connected, try: %s"
 msgstr "Probiere nach dem Verbinden: %s"
 
-#: includes/class-pp-admin.php:541
+#: includes/class-pp-admin.php:561
 msgid ""
 "“Read the PressPilot skill, then build me a pricing page with native blocks.”"
 msgstr ""
 "„Lies den PressPilot-Skill und baue mir dann eine Preisseite mit nativen "
 "Blöcken.“"
 
-#: includes/class-pp-admin.php:548
+#: includes/class-pp-admin.php:568
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: includes/class-pp-admin.php:553
+#: includes/class-pp-admin.php:573
 msgid "MCP endpoint"
 msgstr "MCP-Endpunkt"
 
-#: includes/class-pp-admin.php:555 includes/class-pp-admin.php:899
+#: includes/class-pp-admin.php:575 includes/class-pp-admin.php:1064
 msgid "Enabled"
 msgstr "Aktiviert"
 
-#: includes/class-pp-admin.php:555
+#: includes/class-pp-admin.php:575
 msgid "accept MCP connections at the URL above."
 msgstr "MCP-Verbindungen unter der obigen URL annehmen."
 
-#: includes/class-pp-admin.php:556
+#: includes/class-pp-admin.php:576
 msgid ""
 "Turning this off leaves the REST API working; only the MCP endpoint stops "
 "answering."
@@ -443,23 +451,23 @@ msgstr ""
 "Wenn du dies ausschaltest, bleibt die REST-API funktionsfähig; nur der MCP-"
 "Endpunkt antwortet nicht mehr."
 
-#: includes/class-pp-admin.php:557
+#: includes/class-pp-admin.php:577
 msgid "Tool surface"
 msgstr "Werkzeug-Umfang"
 
-#: includes/class-pp-admin.php:560
+#: includes/class-pp-admin.php:580
 msgid "Full"
 msgstr "Voll"
 
-#: includes/class-pp-admin.php:560
+#: includes/class-pp-admin.php:580
 msgid "every tool, including plugin configuration, database and adapters."
 msgstr "alle Werkzeuge, inklusive Plugin-Konfiguration, Datenbank und Adapter."
 
-#: includes/class-pp-admin.php:562
+#: includes/class-pp-admin.php:582
 msgid "Essential"
 msgstr "Essential"
 
-#: includes/class-pp-admin.php:562
+#: includes/class-pp-admin.php:582
 msgid ""
 "the core building set only. Fewer tools means less context and fewer wrong "
 "turns on smaller models."
@@ -468,7 +476,7 @@ msgstr ""
 "weniger Fehlentscheidungen bei kleineren Modellen."
 
 #. translators: %s: link reading "Permissions".
-#: includes/class-pp-admin.php:567
+#: includes/class-pp-admin.php:587
 #, php-format
 msgid ""
 "Tools for a capability you turned off on the %s screen are hidden either way."
@@ -476,17 +484,17 @@ msgstr ""
 "Werkzeuge einer Fähigkeit, die du im Bildschirm %s deaktiviert hast, bleiben "
 "ohnehin verborgen."
 
-#: includes/class-pp-admin.php:572
+#: includes/class-pp-admin.php:592
 msgid "Key in the URL"
 msgstr "Schlüssel in der URL"
 
 #. translators: 1: the query parameter form, 2: the HTTP header name. Both formatted as code.
-#: includes/class-pp-admin.php:577
+#: includes/class-pp-admin.php:597
 #, php-format
 msgid "Allow %1$s as an alternative to the %2$s header."
 msgstr "%1$s als Alternative zum %2$s-Header erlauben."
 
-#: includes/class-pp-admin.php:584
+#: includes/class-pp-admin.php:604
 msgid ""
 "For clients that accept only a URL. It also rescues setups where the server "
 "strips Authorization headers, which is common on Apache CGI."
@@ -494,11 +502,11 @@ msgstr ""
 "Für Clients, die nur eine URL akzeptieren. Es rettet auch Setups, in denen "
 "der Server Authorization-Header entfernt — auf Apache CGI häufig."
 
-#: includes/class-pp-admin.php:585
+#: includes/class-pp-admin.php:605
 msgid "The key then travels in the URL"
 msgstr "Der Schlüssel wandert dann in der URL"
 
-#: includes/class-pp-admin.php:586
+#: includes/class-pp-admin.php:606
 msgid ""
 "where server and proxy logs can record it — leave this off unless a client "
 "needs it."
@@ -506,25 +514,25 @@ msgstr ""
 "wo Server- und Proxy-Logs ihn aufzeichnen können — lass dies aus, sofern "
 "kein Client es braucht."
 
-#: includes/class-pp-admin.php:589
+#: includes/class-pp-admin.php:609
 msgid "Save MCP settings"
 msgstr "MCP-Einstellungen speichern"
 
 #. translators: %d: number of tools currently exposed.
-#: includes/class-pp-admin.php:597
+#: includes/class-pp-admin.php:617
 #, php-format
 msgid "Tools currently exposed (%d)"
 msgstr "Aktuell bereitgestellte Werkzeuge (%d)"
 
-#: includes/class-pp-admin.php:633
+#: includes/class-pp-admin.php:653
 msgid "Copilot settings saved."
 msgstr "Copilot-Einstellungen gespeichert."
 
-#: includes/class-pp-admin.php:637
+#: includes/class-pp-admin.php:657
 msgid "Model provider"
 msgstr "Modellanbieter"
 
-#: includes/class-pp-admin.php:639
+#: includes/class-pp-admin.php:659
 msgid ""
 "Connect a model and the copilot runs the same tools an external agent gets "
 "over MCP, under the same permissions and the same Skill — without leaving "
@@ -534,11 +542,11 @@ msgstr ""
 "externer Agent über MCP erhält — mit denselben Berechtigungen und demselben "
 "Skill, ohne das Dashboard zu verlassen."
 
-#: includes/class-pp-admin.php:645
+#: includes/class-pp-admin.php:665
 msgid "Provider"
 msgstr "Anbieter"
 
-#: includes/class-pp-admin.php:659
+#: includes/class-pp-admin.php:679
 msgid ""
 "Stored in this site's database and used only for these calls. Leave blank to "
 "keep the saved key."
@@ -546,19 +554,19 @@ msgstr ""
 "Wird in der Datenbank dieser Website gespeichert und nur für diese Aufrufe "
 "verwendet. Leer lassen, um den gespeicherten Schlüssel zu behalten."
 
-#: includes/class-pp-admin.php:661
+#: includes/class-pp-admin.php:681
 msgid "Get a key"
 msgstr "Schlüssel holen"
 
-#: includes/class-pp-admin.php:664
+#: includes/class-pp-admin.php:684
 msgid "Model"
 msgstr "Modell"
 
-#: includes/class-pp-admin.php:666
+#: includes/class-pp-admin.php:686
 msgid "Load available models"
 msgstr "Verfügbare Modelle laden"
 
-#: includes/class-pp-admin.php:668
+#: includes/class-pp-admin.php:688
 msgid ""
 "Save your key first, then load the list — it comes from the provider, so it "
 "is never out of date."
@@ -566,19 +574,19 @@ msgstr ""
 "Speichere zuerst deinen Schlüssel und lade dann die Liste — sie kommt vom "
 "Anbieter und ist nie veraltet."
 
-#: includes/class-pp-admin.php:669
+#: includes/class-pp-admin.php:689
 msgid "API base URL"
 msgstr "API-Basis-URL"
 
-#: includes/class-pp-admin.php:671
+#: includes/class-pp-admin.php:691
 msgid "Only change this for a self-hosted or gateway endpoint."
 msgstr "Ändere dies nur für einen selbst gehosteten Endpunkt oder ein Gateway."
 
-#: includes/class-pp-admin.php:672
+#: includes/class-pp-admin.php:692
 msgid "Step limit"
 msgstr "Schrittlimit"
 
-#: includes/class-pp-admin.php:674
+#: includes/class-pp-admin.php:694
 msgid ""
 "How many tool-calling rounds one request may take before the copilot stops "
 "and reports back."
@@ -586,20 +594,20 @@ msgstr ""
 "Wie viele Werkzeug-Runden eine Anfrage nutzen darf, bevor der Copilot stoppt "
 "und berichtet."
 
-#: includes/class-pp-admin.php:676
+#: includes/class-pp-admin.php:696
 msgid "Save provider"
 msgstr "Anbieter speichern"
 
-#: includes/class-pp-admin.php:681
+#: includes/class-pp-admin.php:701
 msgid "Chat"
 msgstr "Chat"
 
-#: includes/class-pp-admin.php:683
+#: includes/class-pp-admin.php:703
 msgid "Add an API key and a model above to start using the copilot."
 msgstr ""
 "Füge oben einen API-Schlüssel und ein Modell hinzu, um den Copilot zu nutzen."
 
-#: includes/class-pp-admin.php:686
+#: includes/class-pp-admin.php:706
 msgid ""
 "The copilot can change this site for real — create and delete content, edit "
 "settings, install plugins."
@@ -608,13 +616,13 @@ msgstr ""
 "löschen, Einstellungen ändern, Plugins installieren."
 
 #. translators: %s: link reading "Permissions".
-#: includes/class-pp-admin.php:690
+#: includes/class-pp-admin.php:710
 #, php-format
 msgid "It works within the %s you set. Review what it proposes."
 msgstr ""
 "Er arbeitet innerhalb der von dir gesetzten %s. Prüfe, was er vorschlägt."
 
-#: includes/class-pp-admin.php:698
+#: includes/class-pp-admin.php:718
 msgid ""
 "e.g. Build an About page with a hero, three feature cards and a contact "
 "section — native blocks, matching the current theme."
@@ -622,15 +630,15 @@ msgstr ""
 "z. B. Erstelle eine Über-uns-Seite mit Hero, drei Feature-Karten und "
 "Kontaktbereich — native Blöcke, passend zum aktuellen Theme."
 
-#: includes/class-pp-admin.php:700
+#: includes/class-pp-admin.php:720
 msgid "Send"
 msgstr "Senden"
 
-#: includes/class-pp-admin.php:701
+#: includes/class-pp-admin.php:721
 msgid "Clear"
 msgstr "Leeren"
 
-#: includes/class-pp-admin.php:704
+#: includes/class-pp-admin.php:724
 msgid ""
 "Enter sends · Shift+Enter adds a line · the conversation lives in this "
 "browser tab only."
@@ -638,16 +646,16 @@ msgstr ""
 "Enter sendet · Shift+Enter fügt eine Zeile ein · die Unterhaltung lebt nur "
 "in diesem Browser-Tab."
 
-#: includes/class-pp-admin.php:873
+#: includes/class-pp-admin.php:1038
 msgid "Permissions saved."
 msgstr "Berechtigungen gespeichert."
 
-#: includes/class-pp-admin.php:877
+#: includes/class-pp-admin.php:1042
 msgid "What the API is allowed to do"
 msgstr "Was die API tun darf"
 
 #. translators: %s: the HTTP error returned, formatted as code.
-#: includes/class-pp-admin.php:882
+#: includes/class-pp-admin.php:1047
 #, php-format
 msgid ""
 "Everything is enabled by default. Turn off any capability you do not want an "
@@ -658,20 +666,20 @@ msgstr ""
 "Agent nicht anfassen soll. Anfragen an eine deaktivierte Fähigkeit erhalten "
 "%s, und ihre Werkzeuge bleiben dem Agenten völlig verborgen."
 
-#: includes/class-pp-admin.php:895
+#: includes/class-pp-admin.php:1060
 msgid "API access"
 msgstr "API-Zugriff"
 
-#: includes/class-pp-admin.php:899
+#: includes/class-pp-admin.php:1064
 msgid "Disabled"
 msgstr "Deaktiviert"
 
-#: includes/class-pp-admin.php:899
+#: includes/class-pp-admin.php:1064
 msgid "master on/off switch for the whole REST API."
 msgstr "Hauptschalter für die gesamte REST-API."
 
 #. translators: %s: the HTTP error returned, formatted as code.
-#: includes/class-pp-admin.php:905
+#: includes/class-pp-admin.php:1070
 #, php-format
 msgid ""
 "When off, every API request is refused with %s. Use it to cut off access "
@@ -680,52 +688,52 @@ msgstr ""
 "Im Aus-Zustand wird jede API-Anfrage mit %s abgewiesen. Damit kappst du den "
 "Zugriff sofort."
 
-#: includes/class-pp-admin.php:913
+#: includes/class-pp-admin.php:1078
 msgid "IP allow-list"
 msgstr "IP-Freigabeliste"
 
-#: includes/class-pp-admin.php:913
+#: includes/class-pp-admin.php:1078
 msgid "(optional)"
 msgstr "(optional)"
 
-#: includes/class-pp-admin.php:917
+#: includes/class-pp-admin.php:1082
 msgid "One IP address or CIDR range per line."
 msgstr "Eine IP-Adresse oder ein CIDR-Bereich pro Zeile."
 
-#: includes/class-pp-admin.php:918
+#: includes/class-pp-admin.php:1083
 msgid "Leave empty to allow any IP."
 msgstr "Leer lassen, um jede IP zuzulassen."
 
 #. translators: %s: the HTTP error returned, formatted as code.
-#: includes/class-pp-admin.php:922
+#: includes/class-pp-admin.php:1087
 #, php-format
 msgid "When set, only these addresses may use the API; others get %s."
 msgstr ""
 "Wenn gesetzt, dürfen nur diese Adressen die API nutzen; andere erhalten %s."
 
 #. translators: %s: the visitor's current IP address, formatted as code.
-#: includes/class-pp-admin.php:929
+#: includes/class-pp-admin.php:1094
 #, php-format
 msgid "Your current IP: %s"
 msgstr "Deine aktuelle IP: %s"
 
-#: includes/class-pp-admin.php:938
+#: includes/class-pp-admin.php:1103
 msgid "Capabilities"
 msgstr "Fähigkeiten"
 
-#: includes/class-pp-admin.php:940
+#: includes/class-pp-admin.php:1105
 msgid "Enable all"
 msgstr "Alle aktivieren"
 
-#: includes/class-pp-admin.php:941
+#: includes/class-pp-admin.php:1106
 msgid "Disable all"
 msgstr "Alle deaktivieren"
 
-#: includes/class-pp-admin.php:959
+#: includes/class-pp-admin.php:1124
 msgid "Allow code execution"
 msgstr "Codeausführung erlauben"
 
-#: includes/class-pp-admin.php:961
+#: includes/class-pp-admin.php:1126
 msgid ""
 "Lets the API run arbitrary PHP — the universal fallback for configuring any "
 "plugin."
@@ -733,12 +741,12 @@ msgstr ""
 "Erlaubt der API, beliebiges PHP auszuführen — der universelle Rückfallweg "
 "zur Konfiguration jedes Plugins."
 
-#: includes/class-pp-admin.php:962
+#: includes/class-pp-admin.php:1127
 msgid "Off by default."
 msgstr "Standardmäßig aus."
 
 #. translators: %s: the capability name, formatted as code.
-#: includes/class-pp-admin.php:966
+#: includes/class-pp-admin.php:1131
 #, php-format
 msgid ""
 "Only enable it if you trust the API key holder completely; it is as powerful "
@@ -749,7 +757,7 @@ msgstr ""
 "Fähigkeit %s oben."
 
 #. translators: %s: a list of always-available endpoints, formatted as code.
-#: includes/class-pp-admin.php:978
+#: includes/class-pp-admin.php:1143
 #, php-format
 msgid ""
 "Discovery routes (%s) are always available so an agent can inspect the site."
@@ -757,20 +765,20 @@ msgstr ""
 "Discovery-Routen (%s) sind immer verfügbar, damit ein Agent die Website "
 "prüfen kann."
 
-#: includes/class-pp-admin.php:987
+#: includes/class-pp-admin.php:1152
 msgid "Save permissions"
 msgstr "Berechtigungen speichern"
 
-#: includes/class-pp-admin.php:1009
+#: includes/class-pp-admin.php:1174
 msgid "Documentation file not found."
 msgstr "Dokumentationsdatei nicht gefunden."
 
-#: includes/class-pp-admin.php:1013
+#: includes/class-pp-admin.php:1178
 msgid "API & Agent Skill"
 msgstr "API & Agenten-Skill"
 
 #. translators: %s: the endpoint URL, formatted as code.
-#: includes/class-pp-admin.php:1019
+#: includes/class-pp-admin.php:1184
 #, php-format
 msgid ""
 "Hand this to any AI agent so it can build your site through the plugin's "
@@ -779,7 +787,7 @@ msgstr ""
 "Gib dies einem beliebigen KI-Agenten, damit er deine Website über die REST-"
 "API des Plugins bauen kann. Es wird auch unter %s ausgeliefert."
 
-#: includes/class-pp-admin.php:1023
+#: includes/class-pp-admin.php:1188
 msgid ""
 "The Skill is English on every locale: it is read by a language model, and "
 "translating it would make the model worse at the job."
@@ -787,15 +795,15 @@ msgstr ""
 "Der Skill bleibt in jeder Sprache englisch: Ihn liest ein Sprachmodell, und "
 "eine Übersetzung würde das Modell schlechter machen."
 
-#: includes/class-pp-admin.php:1026
+#: includes/class-pp-admin.php:1191
 msgid "Copy all"
 msgstr "Alles kopieren"
 
-#: includes/class-pp-admin.php:1027
+#: includes/class-pp-admin.php:1192
 msgid "Open raw Skill"
 msgstr "Rohen Skill öffnen"
 
-#: includes/class-pp-admin.php:1028
+#: includes/class-pp-admin.php:1193
 msgid "OpenAPI spec (JSON)"
 msgstr "OpenAPI-Spezifikation (JSON)"
 
@@ -917,7 +925,10 @@ msgid ""
 "Open models (MiniMax, Kimi, DeepSeek) on a decentralised GPU network, at a "
 "fraction of the usual price. Model ids are namespaced, e.g. \"MiniMaxAI/"
 "MiniMax-M2.7\"."
-msgstr "Offene Modelle (MiniMax, Kimi, DeepSeek) in einem dezentralen GPU-Netz, zu einem Bruchteil des üblichen Preises. Modell-IDs sind mit Namensraum versehen, z. B. „MiniMaxAI/MiniMax-M2.7“."
+msgstr ""
+"Offene Modelle (MiniMax, Kimi, DeepSeek) in einem dezentralen GPU-Netz, zu "
+"einem Bruchteil des üblichen Preises. Modell-IDs sind mit Namensraum "
+"versehen, z. B. „MiniMaxAI/MiniMax-M2.7“."
 
 #: includes/class-pp-providers.php:101
 msgid "Custom (OpenAI-compatible)"
@@ -931,7 +942,7 @@ msgstr ""
 "Jeder Endpunkt, der /chat/completions spricht — ein lokaler Ollama- oder "
 "vLLM-Server, LiteLLM, ein Firmen-Gateway."
 
-#: includes/class-pp-providers.php:573
+#: includes/class-pp-providers.php:611
 msgid ""
 "The provider rejected the API key. It is usually expired, revoked, or out of "
 "credit; issue a fresh one in the provider's console and paste it above."

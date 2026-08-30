@@ -181,6 +181,8 @@ class PP_Admin {
 			'tools'     => __( 'Tools', 'presspilot' ),
 			'error'     => __( 'Error', 'presspilot' ),
 			'pickModel' => __( '— pick a model —', 'presspilot' ),
+			/* translators: %s: the new plugin version number. */
+			'stale'     => __( 'PressPilot was updated to %s while this page was open. Reload the page — until you do, this screen is still running the old version.', 'presspilot' ),
 			/* translators: %d: number of models returned by the provider. */
 			'nModels'   => __( '%d models', 'presspilot' ),
 			/* translators: %s: error message. */
@@ -946,6 +948,25 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 					messages = [];
 					chat.innerHTML = '';
 				});
+
+				// This screen's behaviour lives in the markup it was served with, so an
+				// update applied while it sits open leaves it silently running old
+				// code — which reads as "the fix didn't work". Ask the server what
+				// version it is on now and say so plainly if they have diverged.
+				(function () {
+					var PAGE_VERSION = <?php echo wp_json_encode( defined( 'PP_VERSION' ) ? PP_VERSION : '' ); ?>;
+					fetch(REST + '/ping', { headers: { 'X-PressPilot-Key': KEY } })
+						.then(function (r) { return r.json(); })
+						.then(function (d) {
+							if (!d || !d.version || d.version === PAGE_VERSION) { return; }
+							var warn = el('pp-warn');
+							warn.style.borderColor = '#f0b849';
+							warn.textContent = L.stale.replace('%s', d.version);
+							var card = chat.parentNode;
+							card.insertBefore(warn, chat);
+						})
+						.catch(function () {});
+				})();
 
 				// Provider picker: keep the base URL and "get a key" link in step with it.
 				var providerSelect = document.getElementById('pp_provider');
