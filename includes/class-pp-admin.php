@@ -355,13 +355,20 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 			<?php endif; ?>
 
 			<div class="pp-card" style="border-color:#c5d9ed;background:#f6fbff">
-				<h2><span class="dashicons dashicons-rest-api"></span> <?php echo esc_html__( 'Connect an agent directly', 'presspilot' ); ?></h2>
-				<p style="margin:0 0 10px">
-					<?php echo esc_html__( 'Claude Code, OpenAI Codex, Cursor and any other MCP client can plug straight into this site and see it as native tools — no prompt to paste, no HTTP calls to write. Or connect a model (Anthropic, OpenAI, OpenRouter, AgentRouter) and run the copilot right here in the dashboard.', 'presspilot' ); ?>
-				</p>
-				<div class="pp-links">
-					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-agents' ) ); ?>"><?php echo esc_html__( 'Agents (MCP)', 'presspilot' ); ?> →</a>
-					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-copilot' ) ); ?>"><?php echo esc_html__( 'Built-in Copilot', 'presspilot' ); ?> →</a>
+				<h2><span class="dashicons dashicons-rest-api"></span> <?php echo esc_html__( 'Two ways to let an AI work on this site', 'presspilot' ); ?></h2>
+				<div class="pp-scope-grid" style="margin:0 0 10px">
+					<div class="pp-scope" style="display:block;background:#fff">
+						<span class="pp-badge on"><?php echo esc_html__( 'No API key', 'presspilot' ); ?></span>
+						<strong style="display:block;margin:6px 0 2px"><?php echo esc_html__( 'Your agent connects to the site (MCP)', 'presspilot' ); ?></strong>
+						<span class="pp-scope-desc"><?php echo esc_html__( 'Claude Code, Claude Desktop, OpenAI Codex, ChatGPT, VS Code with GitHub Copilot, Cursor. Each runs on the subscription you already pay for and sees this site as native tools. This is the path for most people.', 'presspilot' ); ?></span>
+						<p style="margin:8px 0 0"><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-agents' ) ); ?>"><?php echo esc_html__( 'Agents (MCP)', 'presspilot' ); ?> →</a></p>
+					</div>
+					<div class="pp-scope" style="display:block;background:#fff">
+						<span class="pp-badge off"><?php echo esc_html__( 'API key needed', 'presspilot' ); ?></span>
+						<strong style="display:block;margin:6px 0 2px"><?php echo esc_html__( 'The site calls a model itself (Copilot)', 'presspilot' ); ?></strong>
+						<span class="pp-scope-desc"><?php echo esc_html__( 'Chat with your site from this dashboard. Because WordPress makes the model calls from the server, it needs a key from Anthropic, OpenAI, OpenRouter, AgentRouter or Dahl — a subscription login lives on your computer and cannot be borrowed by a server.', 'presspilot' ); ?></span>
+						<p style="margin:8px 0 0"><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=presspilot-copilot' ) ); ?>"><?php echo esc_html__( 'Built-in Copilot', 'presspilot' ); ?> →</a></p>
+					</div>
 				</div>
 			</div>
 
@@ -529,15 +536,28 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 			</div>
 
 			<div class="pp-card">
-				<h2><span class="pp-step">1</span> <?php echo esc_html__( 'Connect your agent', 'presspilot' ); ?></h2>
+				<h2><span class="pp-step">1</span> <?php echo esc_html__( 'Connect your agent — with the subscription you already have', 'presspilot' ); ?></h2>
+				<p class="description">
+					<?php echo esc_html__( 'Every client below runs on its own plan — Claude Pro or Max, ChatGPT Plus or Pro, GitHub Copilot — and needs no model API key anywhere. The client pays for the model; this site is simply a tool it can see. Sign in to the client as you normally do, then add this site with the snippet for it.', 'presspilot' ); ?>
+				</p>
 				<div class="pp-tabs" role="tablist">
 					<?php $first = true; foreach ( $snippets as $slug => $snippet ) : ?>
 						<button type="button" class="pp-tab" role="tab" aria-selected="<?php echo $first ? 'true' : 'false'; ?>"
 							data-pp-tab="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $snippet['label'] ); ?></button>
 					<?php $first = false; endforeach; ?>
 				</div>
-				<?php $first = true; foreach ( $snippets as $slug => $snippet ) : ?>
+				<?php $url_key_on = PP_MCP::url_key_allowed(); $first = true; foreach ( $snippets as $slug => $snippet ) : ?>
 					<div class="pp-panel <?php echo $first ? 'is-active' : ''; ?>" data-pp-panel="<?php echo esc_attr( $slug ); ?>">
+						<?php if ( ! empty( $snippet['login'] ) ) : ?>
+							<p style="margin:0 0 6px"><span class="pp-badge on">✓ <?php echo esc_html__( 'No API key', 'presspilot' ); ?></span>
+								<span class="pp-tag"><?php echo esc_html__( 'Uses:', 'presspilot' ); ?> <?php echo esc_html( $snippet['login'] ); ?></span></p>
+						<?php endif; ?>
+						<?php if ( ! empty( $snippet['needs_url_key'] ) && ! $url_key_on ) : ?>
+							<div class="pp-warn" style="margin:6px 0 8px">
+								<strong><?php echo esc_html__( 'Not ready yet:', 'presspilot' ); ?></strong>
+								<?php echo esc_html__( 'this client can only take a URL, so the key has to ride in it. Turn on "Key in the URL" in Settings below, then come back — the snippet will include the key.', 'presspilot' ); ?>
+							</div>
+						<?php endif; ?>
 						<p class="description"><?php echo esc_html( $snippet['note'] ); ?></p>
 						<?php $this->code_block( $snippet['code'], 'pp-snip-' . $slug ); ?>
 					</div>
@@ -657,6 +677,13 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 				<h2><span class="dashicons dashicons-admin-users"></span> <?php echo esc_html__( 'Model provider', 'presspilot' ); ?></h2>
 				<p class="description">
 					<?php echo esc_html__( 'Connect a model and the copilot runs the same tools an external agent gets over MCP, under the same permissions and the same Skill — without leaving the dashboard.', 'presspilot' ); ?>
+					<?php
+					printf(
+						/* translators: %s: link reading "Agents (MCP)". */
+						esc_html__( 'This needs an API key because WordPress makes the model calls from the server; a Claude, ChatGPT or Copilot subscription cannot be used here. To work on your subscription instead, connect your agent on the %s screen — no key required.', 'presspilot' ),
+						'<a href="' . esc_url( admin_url( 'admin.php?page=presspilot-agents' ) ) . '">' . esc_html__( 'Agents (MCP)', 'presspilot' ) . '</a>'
+					);
+					?>
 				</p>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="pp_save_agent">

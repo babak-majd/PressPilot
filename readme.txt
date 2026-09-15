@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.2.2
+Stable tag: 2.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,13 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.3.0 =
+* **Work on the subscription you already have — no API key.** The Agents screen now carries a verified, copy-paste setup for every subscription client: **Claude Code** (CLI and the VS Code / JetBrains extensions), **Claude Desktop / claude.ai** (custom connectors), **OpenAI Codex** (CLI and IDE), **ChatGPT** (Developer-mode connectors), **VS Code + GitHub Copilot**, and Cursor / Windsurf. Each runs on its own plan — Claude Pro/Max, ChatGPT Plus/Pro, Copilot — and the plugin never sees a model API key.
+* Fix: the VS Code snippet was in the wrong format. VS Code reads `servers` (not `mcpServers`) and requires `"type": "http"`; it now also uses VS Code's `inputs` mechanism so the key is prompted for once and stored securely instead of living in the file. Each client's format was checked against its own documentation — they are not interchangeable.
+* Claude Code now also gets the shareable `.mcp.json` form with `${PRESSPILOT_KEY}` expansion, so a team can commit the file without the secret.
+* Clients that can only take a bare URL (Claude Desktop, ChatGPT) are flagged on the screen when "Key in the URL" is off, instead of silently handing out a URL that will not authenticate.
+* The Connect screen now explains the two paths side by side: **your agent connects to the site** (MCP, subscription, no key) versus **the site calls a model itself** (built-in Copilot, API key needed — a subscription login lives on your computer and cannot be borrowed by a server). The Copilot screen says the same and points to the no-key path.
 
 = 2.2.2 =
 * Fix: the Copilot screen now notices when the plugin has been updated underneath it. Its behaviour ships inside the page it was served with, so a screen left open across an update kept running the old code — which looks exactly like a fix that did not work. It now checks the running version and says plainly that a reload is needed.

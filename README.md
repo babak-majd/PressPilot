@@ -17,8 +17,20 @@ https://YOUR-SITE.com/wp-json/presspilot/v1/mcp
 ```
 
 Point a client at it and your site appears inside it as **native tools** — nothing to paste,
-no HTTP to hand-write. Works with **Claude Code**, **OpenAI Codex**, **Cursor / Windsurf /
-VS Code**, and any other MCP client.
+no HTTP to hand-write, and **no model API key**: each client runs on the subscription you
+already have, and the plugin never sees it.
+
+| Client | Runs on | Setup |
+|---|---|---|
+| **Claude Code** (CLI, VS Code, JetBrains) | Claude Pro / Max | one `claude mcp add` line, or a shareable `.mcp.json` |
+| **Claude Desktop / claude.ai** | Claude Free–Enterprise | Customize → Connectors → Add custom connector (URL) |
+| **OpenAI Codex** (CLI, IDE) | ChatGPT Plus / Pro / Team | `~/.codex/config.toml` |
+| **ChatGPT** | ChatGPT Plus / Pro / Team | Developer mode → add connector (URL) |
+| **VS Code + GitHub Copilot** | GitHub Copilot | `.vscode/mcp.json` (key prompted once, stored securely) |
+| **Cursor / Windsurf** | the editor's plan | `.cursor/mcp.json` |
+
+Every snippet is generated with your own URL and key on **PressPilot → Agents (MCP)**, in
+each client's verified format — they are not interchangeable.
 
 ```bash
 # Claude Code — run once
@@ -63,6 +75,11 @@ list from the provider itself, so it is never out of date), and start.
 
 The copilot runs **exactly** the same tools, under the same permissions, following the same
 manual as an external agent over MCP. One source of truth, two ways in.
+
+> **Why the copilot needs an API key when MCP does not:** here WordPress itself makes the model
+> calls, from the server. A Claude, ChatGPT or Copilot subscription is a login that lives on
+> your computer, tied to its official client — a server cannot borrow it. If you would rather
+> work on your subscription, connect your agent over MCP instead.
 
 ---
 

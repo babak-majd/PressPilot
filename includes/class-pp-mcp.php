@@ -644,35 +644,110 @@ class PP_MCP {
 	/**
 	 * Ready-to-paste connection setup for the agents people actually use.
 	 *
+	 * Every client here works on the user's own subscription — Claude Pro/Max,
+	 * ChatGPT Plus/Pro, GitHub Copilot — with no model API key anywhere: the
+	 * client pays for the model and this site is just a tool it can see. That is
+	 * the whole point of the MCP path, and the reason each entry says so.
+	 *
 	 * The code samples are literal client configuration and never translated;
 	 * the notes around them are read by a person, so they follow the dashboard
-	 * language.
+	 * language. Each client's file format was checked against its own docs —
+	 * they are NOT interchangeable (VS Code wants `servers`, Claude Code and
+	 * Cursor want `mcpServers`, Codex wants TOML), and a wrong key fails silently.
+	 *
+	 * `needs_url_key`: the client accepts a bare URL and cannot send a custom
+	 * header, so it can only connect through the `?key=` form — the admin screen
+	 * flags this when that option is off.
 	 *
 	 * @param string $key API key.
-	 * @return array<string,array{label:string,lang:string,code:string,note:string}>
+	 * @return array<string,array{label:string,login:string,lang:string,code:string,note:string,needs_url_key:bool}>
 	 */
 	public static function client_snippets( $key ) {
 		$url     = self::endpoint_url();
 		$url_key = self::url_key_allowed() ? add_query_arg( 'key', $key, $url ) : $url;
+		$json    = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
 
 		return array(
-			'claude-code' => array(
-				'label' => 'Claude Code',
-				'lang'  => 'bash',
-				'note'  => __( 'Run this once in your terminal, then start Claude Code and ask it to build. Add --scope user to make it available in every project.', 'presspilot' ),
-				'code'  => "claude mcp add --transport http presspilot \\\n  " . $url . " \\\n  --header \"Authorization: Bearer " . $key . '"',
+			'claude-code'   => array(
+				'label'         => 'Claude Code',
+				'login'         => __( 'Claude Pro / Max subscription', 'presspilot' ),
+				'lang'          => 'bash',
+				'needs_url_key' => false,
+				'note'          => __( 'Run this once in your terminal. The Claude Code extensions for VS Code and JetBrains share the same configuration, so they pick it up too. Add --scope user to make it available in every project.', 'presspilot' ),
+				'code'          => "claude mcp add --transport http presspilot \\\n  " . $url . " \\\n  --header \"Authorization: Bearer " . $key . "\"\n\n"
+					. "# Or, as a file your team can share — .mcp.json at the project root\n"
+					. "# (export PRESSPILOT_KEY in your shell so the secret stays out of the file):\n"
+					. wp_json_encode(
+						array(
+							'mcpServers' => array(
+								'presspilot' => array(
+									'type'    => 'http',
+									'url'     => $url,
+									'headers' => array( 'Authorization' => 'Bearer ${PRESSPILOT_KEY}' ),
+								),
+							),
+						),
+						$json
+					),
 			),
-			'codex'       => array(
-				'label' => 'OpenAI Codex',
-				'lang'  => 'toml',
-				'note'  => __( 'Add this to ~/.codex/config.toml (a url key means a remote Streamable HTTP server). Export PRESSPILOT_KEY in your shell so the token stays out of the file.', 'presspilot' ),
-				'code'  => "[mcp_servers.presspilot]\nurl = \"" . $url . "\"\nbearer_token_env_var = \"PRESSPILOT_KEY\"\n\n# then, in your shell:\n#   export PRESSPILOT_KEY=\"" . $key . '"',
+			'claude-app'    => array(
+				'label'         => 'Claude Desktop / claude.ai',
+				'login'         => __( 'Claude Free (one connector), Pro, Max, Team or Enterprise', 'presspilot' ),
+				'lang'          => 'text',
+				'needs_url_key' => true,
+				'note'          => __( 'In the Claude app or claude.ai: Customize → Connectors → "+" → Add custom connector, and paste this URL. The app cannot send a custom header, so the key rides in the URL — turn on "Key in the URL" in Settings below first. Your site must be reachable from the public internet.', 'presspilot' ),
+				'code'          => $url_key,
 			),
-			'cursor'      => array(
-				'label' => 'Cursor / Windsurf / VS Code',
-				'lang'  => 'json',
-				'note'  => __( 'Add to .cursor/mcp.json in your project, or to the editor\'s global MCP settings.', 'presspilot' ),
-				'code'  => wp_json_encode(
+			'codex'         => array(
+				'label'         => 'OpenAI Codex',
+				'login'         => __( 'ChatGPT Plus / Pro / Team subscription', 'presspilot' ),
+				'lang'          => 'toml',
+				'needs_url_key' => false,
+				'note'          => __( 'Add this to ~/.codex/config.toml. The Codex CLI and the Codex IDE extension read the same file. Export PRESSPILOT_KEY in your shell so the token stays out of the file.', 'presspilot' ),
+				'code'          => "[mcp_servers.presspilot]\nurl = \"" . $url . "\"\nbearer_token_env_var = \"PRESSPILOT_KEY\"\n\n# then, in your shell:\n#   export PRESSPILOT_KEY=\"" . $key . '"',
+			),
+			'chatgpt'       => array(
+				'label'         => 'ChatGPT',
+				'login'         => __( 'ChatGPT Plus / Pro / Team subscription', 'presspilot' ),
+				'lang'          => 'text',
+				'needs_url_key' => true,
+				'note'          => __( 'In ChatGPT: Settings → Security and login → turn on Developer mode, then add a connector with this URL. ChatGPT cannot send a custom header, so the key rides in the URL — turn on "Key in the URL" in Settings below first.', 'presspilot' ),
+				'code'          => $url_key,
+			),
+			'vscode'        => array(
+				'label'         => 'VS Code + GitHub Copilot',
+				'login'         => __( 'GitHub Copilot subscription', 'presspilot' ),
+				'lang'          => 'json',
+				'needs_url_key' => false,
+				'note'          => __( 'Save as .vscode/mcp.json in your workspace (or add to your user profile). VS Code asks for the key once, the first time the server starts, and stores it securely. The tools then show up in Copilot Chat agent mode.', 'presspilot' ),
+				'code'          => wp_json_encode(
+					array(
+						'inputs'  => array(
+							array(
+								'type'        => 'promptString',
+								'id'          => 'presspilot-key',
+								'description' => 'PressPilot API key',
+								'password'    => true,
+							),
+						),
+						'servers' => array(
+							'presspilot' => array(
+								'type'    => 'http',
+								'url'     => $url,
+								'headers' => array( 'Authorization' => 'Bearer ${input:presspilot-key}' ),
+							),
+						),
+					),
+					$json
+				) . "\n\n// Your key (paste it when VS Code asks):\n// " . $key,
+			),
+			'cursor'        => array(
+				'label'         => 'Cursor / Windsurf',
+				'login'         => __( 'The editor\'s own subscription', 'presspilot' ),
+				'lang'          => 'json',
+				'needs_url_key' => false,
+				'note'          => __( 'Add to .cursor/mcp.json in your project, or to the editor\'s global MCP settings.', 'presspilot' ),
+				'code'          => wp_json_encode(
 					array(
 						'mcpServers' => array(
 							'presspilot' => array(
@@ -681,16 +756,18 @@ class PP_MCP {
 							),
 						),
 					),
-					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+					$json
 				),
 			),
-			'url-only'    => array(
-				'label' => __( 'Any client (URL only)', 'presspilot' ),
-				'lang'  => 'text',
-				'note'  => self::url_key_allowed()
+			'url-only'      => array(
+				'label'         => __( 'Any client (URL only)', 'presspilot' ),
+				'login'         => '',
+				'lang'          => 'text',
+				'needs_url_key' => true,
+				'note'          => self::url_key_allowed()
 					? __( 'For clients that accept only a URL and no custom headers. The key travels in the URL, so it can end up in server and proxy logs — prefer a header where you can.', 'presspilot' )
 					: __( 'Turn on "Key in the URL" below to use this form. It suits clients that accept only a URL and no custom headers.', 'presspilot' ),
-				'code'  => $url_key,
+				'code'          => $url_key,
 			),
 		);
 	}
