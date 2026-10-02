@@ -105,6 +105,7 @@ class PP_FSE {
 			$postarr['ID'] = $existing;
 		}
 
+		$postarr = PP_Helpers::slash_postarr( $postarr );
 		$post_id = PP_Gutenberg::without_kses(
 			function () use ( $postarr ) {
 				return wp_insert_post( $postarr, true );
@@ -293,9 +294,11 @@ class PP_FSE {
 		$updated = PP_Gutenberg::without_kses(
 			function () use ( $post_id, $current ) {
 				return wp_update_post(
-					array(
-						'ID'           => $post_id,
-						'post_content' => wp_json_encode( $current ),
+					PP_Helpers::slash_postarr(
+						array(
+							'ID'           => $post_id,
+							'post_content' => wp_json_encode( $current ),
+						)
 					),
 					true
 				);
@@ -342,12 +345,14 @@ class PP_FSE {
 			return 0;
 		}
 		$id = wp_insert_post(
-			array(
-				'post_type'    => 'wp_global_styles',
-				'post_title'   => 'Custom Styles',
-				'post_name'    => 'wp-global-styles-' . self::theme_slug(),
-				'post_status'  => 'publish',
-				'post_content' => wp_json_encode( array( 'version' => 2, 'isGlobalStylesUserThemeJSON' => true ) ),
+			PP_Helpers::slash_postarr(
+				array(
+					'post_type'    => 'wp_global_styles',
+					'post_title'   => 'Custom Styles',
+					'post_name'    => 'wp-global-styles-' . self::theme_slug(),
+					'post_status'  => 'publish',
+					'post_content' => wp_json_encode( array( 'version' => 2, 'isGlobalStylesUserThemeJSON' => true ) ),
+				)
 			)
 		);
 		if ( ! is_wp_error( $id ) ) {

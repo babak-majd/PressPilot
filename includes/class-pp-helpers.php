@@ -60,6 +60,26 @@ class PP_Helpers {
 	 * @param int    $status  HTTP status.
 	 * @return WP_Error
 	 */
+	/**
+	 * Slash a post array on its way into wp_insert_post()/wp_update_post().
+	 *
+	 * Both of those expect ALREADY-SLASHED data: they run wp_unslash() over the
+	 * whole array, so anything handed to them raw silently loses one level of
+	 * backslashes. Block markup depends on that level. serialize_block_attributes()
+	 * escapes `--`, `<`, `>`, `&` and `"` inside the block comment as `\u002d`,
+	 * `\u003c`, `\u003e`, `\u0026`, `\u0022` so the comment can never be closed
+	 * early -- write that unslashed and `"className":"is-sec\u002d\u002dink"`
+	 * lands in the database as `"className":"is-secu002du002dink"`, which the
+	 * editor then parses as a literal class name with the `--` gone. The same
+	 * applies to any JS, JSON or regex we write into post_content.
+	 *
+	 * @param array $postarr Post array with raw (unslashed) values.
+	 * @return array Slashed copy, safe to pass to wp_insert_post()/wp_update_post().
+	 */
+	public static function slash_postarr( $postarr ) {
+		return wp_slash( $postarr );
+	}
+
 	public static function error( $code, $message, $status = 400 ) {
 		return new WP_Error( $code, $message, array( 'status' => $status ) );
 	}

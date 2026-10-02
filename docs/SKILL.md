@@ -271,13 +271,15 @@ template — translates its text/links + sets `dir=rtl` on RTL pages (defer the 
 fetch the same-origin `/cdn-cgi/trace` (returns `loc=XX`) and, **only on the first visit**
 (no cookie yet), redirect to the matching language — always respecting a later manual choice.
 
-**4. Two constraints when injecting JS/CSS through the API:**
-- WordPress `wp_unslash`es written content, **stripping one level of backslashes** — so use
-  **no backslashes in injected JS** (no regex literals like `/\/+$/`; do the string ops by
-  hand). Re-fetch and `node --check` the live script to confirm it parses.
+**4. One constraint when injecting JS/CSS through the API:**
 - Customizer Additional CSS (`/settings/custom-css`) **HTML-escapes `>` to `&gt;`**, breaking
   child combinators — use **descendant selectors** there. (Inside a `<style>` in post content
   or a `core/html` block, `>` is fine.)
+
+Backslashes used to need avoiding here (WordPress `wp_unslash`es what
+`wp_insert_post()` is given, so one level was stripped and regex literals in injected JS
+broke). **Fixed in 2.4.0** — content is slashed on the way in, so what you send is what is
+stored. It is still worth re-fetching an injected script and running `node --check` on it.
 
 ## 9. Everything local
 

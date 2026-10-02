@@ -2,8 +2,9 @@
 /**
  * Plugin Name:       PressPilot
  * Plugin URI:        https://bobclub.ir
+ * Update URI:        https://github.com/babak-majd/PressPilot
  * Description:        An AI copilot for WordPress. Connect Claude Code, OpenAI Codex, OpenRouter or AgentRouter straight to your site over MCP — or use the built-in copilot — and let an agent build and manage everything: pages, posts, blocks, themes, menus, templates, media, settings and plugin configuration.
- * Version:           2.3.0
+ * Version:           2.4.0
  * Author:            Baabak Majd
  * Author URI:        https://bobclub.ir
  * Text Domain:       presspilot
@@ -18,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PP_VERSION', '2.3.0' );
+define( 'PP_VERSION', '2.4.0' );
 define( 'PP_PRODUCT', 'PressPilot' );
 define( 'PP_TAGLINE', 'AI copilot for WordPress' );
 define( 'PP_FILE', __FILE__ );
@@ -46,6 +47,7 @@ require_once PP_PATH . 'includes/class-pp-providers.php';
 require_once PP_PATH . 'includes/class-pp-agent.php';
 require_once PP_PATH . 'includes/class-pp-rest.php';
 require_once PP_PATH . 'includes/class-pp-admin.php';
+require_once PP_PATH . 'includes/class-pp-github-updater.php';
 
 /**
  * On activation: make sure an API key exists so the user can copy it immediately.
@@ -81,6 +83,8 @@ add_action( 'init', 'pp_load_textdomain' );
 function pp_boot() {
 	PP_Auth::instance();
 	PP_REST::instance();
+	// Not admin-only: WordPress also runs its plugin update check from cron.
+	PP_GitHub_Updater::init();
 	if ( is_admin() ) {
 		PP_Admin::instance();
 	}

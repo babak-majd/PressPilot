@@ -541,11 +541,12 @@ class PP_REST {
 	/**
 	 * Insert a post, disabling KSES for trusted (API-key) block-markup writes.
 	 *
-	 * @param array $postarr Post array.
+	 * @param array $postarr Post array with raw (unslashed) values.
 	 * @param bool  $trusted Whether to bypass KSES.
 	 * @return int|WP_Error
 	 */
 	private function insert_post( $postarr, $trusted ) {
+		$postarr = PP_Helpers::slash_postarr( $postarr );
 		if ( ! $trusted ) {
 			return wp_insert_post( $postarr, true );
 		}
@@ -671,11 +672,12 @@ class PP_REST {
 	/**
 	 * Update a post, disabling KSES for trusted (API-key) block-markup writes.
 	 *
-	 * @param array $postarr Post array.
+	 * @param array $postarr Post array with raw (unslashed) values.
 	 * @param bool  $trusted Whether to bypass KSES.
 	 * @return int|WP_Error
 	 */
 	private function update_post( $postarr, $trusted ) {
+		$postarr = PP_Helpers::slash_postarr( $postarr );
 		if ( ! $trusted ) {
 			return wp_update_post( $postarr, true );
 		}

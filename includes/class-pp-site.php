@@ -261,11 +261,11 @@ class PP_Site {
 			'post_status' => 'publish',
 		);
 		if ( ! empty( $existing ) ) {
-			$post_id            = (int) $existing[0];
-			$postarr['ID']      = $post_id;
-			wp_update_post( $postarr );
+			$post_id       = (int) $existing[0];
+			$postarr['ID'] = $post_id;
+			wp_update_post( PP_Helpers::slash_postarr( $postarr ) );
 		} else {
-			$post_id = wp_insert_post( $postarr, true );
+			$post_id = wp_insert_post( PP_Helpers::slash_postarr( $postarr ), true );
 			if ( is_wp_error( $post_id ) ) {
 				return $post_id;
 			}

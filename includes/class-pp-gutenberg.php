@@ -241,17 +241,17 @@ class PP_Gutenberg {
 			$content = (string) $args['content'];
 		}
 
+		$postarr = PP_Helpers::slash_postarr(
+			array(
+				'post_type'    => 'wp_block',
+				'post_title'   => $title,
+				'post_status'  => 'publish',
+				'post_content' => $content,
+			)
+		);
 		$post_id = self::without_kses(
-			function () use ( $title, $content ) {
-				return wp_insert_post(
-					array(
-						'post_type'    => 'wp_block',
-						'post_title'   => $title,
-						'post_status'  => 'publish',
-						'post_content' => $content,
-					),
-					true
-				);
+			function () use ( $postarr ) {
+				return wp_insert_post( $postarr, true );
 			}
 		);
 		if ( is_wp_error( $post_id ) ) {

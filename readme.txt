@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.3.0
+Stable tag: 2.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,10 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.4.0 =
+* **Updates from GitHub, in the normal WordPress places.** PressPilot now reports new releases on Dashboard > Updates and the Plugins screen, "View version details" shows the release notes, and per-plugin auto-updates can be switched on. It hangs off the `Update URI` header, so WordPress asks GitHub instead of the wordpress.org directory — an unrelated plugin sharing the slug there can never be pushed over this install. Adds a "Check for updates" link on the Plugins screen for an immediate check.
+* **Fix: block markup lost a level of backslashes on the way into the database.** `wp_insert_post()` and `wp_update_post()` expect slashed data and unslash whatever they are given, so the escapes WordPress writes inside a block comment — `\u002d\u002d` for `--`, and the same for `<`, `>`, `&`, `"` — were stored with the backslash gone. A class like `is-section\u002d\u002ddark` landed as `is-sectionu002du002ddark`: it rendered correctly, but opening the page in the block editor showed the mangled class, and saving from there dropped the styling. The same applied to any JS, JSON or regex written through the API. Content is now slashed on the way in, so what you send is what is stored.
 
 = 2.3.0 =
 * **Work on the subscription you already have — no API key.** The Agents screen now carries a verified, copy-paste setup for every subscription client: **Claude Code** (CLI and the VS Code / JetBrains extensions), **Claude Desktop / claude.ai** (custom connectors), **OpenAI Codex** (CLI and IDE), **ChatGPT** (Developer-mode connectors), **VS Code + GitHub Copilot**, and Cursor / Windsurf. Each runs on its own plan — Claude Pro/Max, ChatGPT Plus/Pro, Copilot — and the plugin never sees a model API key.

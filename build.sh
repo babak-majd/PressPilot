@@ -8,7 +8,7 @@ TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 DEST="$TMP/presspilot"
 mkdir -p "$DEST"
 tar -C "$ROOT" \
-  --exclude='./.git' --exclude='./.github' --exclude='./.claude' \
+  --exclude='./.git' --exclude='./.github' --exclude='./.claude' --exclude='./.kilo' \
   --exclude='./dist' --exclude='./build.sh' --exclude='./build-dev.sh' \
   --exclude='./.gitignore' --exclude='./dev' \
   -cf - . | tar -C "$DEST" -xf -
