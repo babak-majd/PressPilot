@@ -54,6 +54,11 @@ class PP_REST {
 		register_rest_route( $ns, '/migration-status', $this->route( 'GET', 'migration_status' ) );
 		register_rest_route( $ns, '/performance', $this->route( 'GET', 'performance' ) );
 
+		// Caching: what is in front of the site, and clearing it.
+		register_rest_route( $ns, '/cache', $this->route( 'GET', 'cache_status', 'cache' ) );
+		register_rest_route( $ns, '/cache/purge', $this->route( 'POST', 'cache_purge', 'cache' ) );
+		register_rest_route( $ns, '/cache/auto-purge', $this->route( 'POST', 'cache_auto_purge', 'cache' ) );
+
 		// Content listing & CRUD.
 		register_rest_route( $ns, '/content', $this->route( 'GET', 'list_content', 'content' ) );
 		register_rest_route( $ns, '/content', $this->route( 'POST', 'create_content', 'content' ) );
@@ -1092,6 +1097,49 @@ class PP_REST {
 
 	public function performance( $request ) {
 		return rest_ensure_response( PP_Perf::report( (string) $request->get_param( 'url' ) ) );
+	}
+
+	/**
+	 * Which cache layers this site has, and whether the automatic purge is on.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function cache_status( $request ) {
+		return rest_ensure_response( PP_Cache::detect() );
+	}
+
+	/**
+	 * Clear caches across whichever cache plugins are active.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function cache_purge( $request ) {
+		$args = array(
+			'scope'        => $request->get_param( 'scope' ),
+			'post_id'      => $request->get_param( 'post_id' ),
+			'url'          => $request->get_param( 'url' ),
+			'layers'       => $request->get_param( 'layers' ),
+			'object_cache' => filter_var( $request->get_param( 'object_cache' ), FILTER_VALIDATE_BOOLEAN ),
+			'opcache'      => filter_var( $request->get_param( 'opcache' ), FILTER_VALIDATE_BOOLEAN ),
+		);
+		$res = PP_Cache::purge( array_filter( $args, function ( $v ) { return null !== $v; } ) );
+		return is_wp_error( $res ) ? $res : rest_ensure_response( $res );
+	}
+
+	/**
+	 * Turn the purge-after-write behaviour on or off.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function cache_auto_purge( $request ) {
+		$enabled = $request->get_param( 'enabled' );
+		if ( null === $enabled ) {
+			return PP_Helpers::error( 'pp_missing_enabled', 'Send { "enabled": true|false }.', 400 );
+		}
+		return rest_ensure_response( PP_Cache::set_auto( filter_var( $enabled, FILTER_VALIDATE_BOOLEAN ) ) );
 	}
 
 	/* ------------------------------------------------------------------ */

@@ -68,6 +68,10 @@
     {
       "name": "Agent",
       "description": "The built-in copilot: model-provider configuration and the tool-calling loop that runs inside WordPress."
+    },
+    {
+      "name": "Cache",
+      "description": "Find the cache layers in front of the site and clear them. PressPilot also purges automatically after its own writes, so a URL fetched back after an edit is the page just written."
     }
   ],
   "paths": {
@@ -2265,6 +2269,109 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/cache": {
+      "get": {
+        "tags": [
+          "Cache"
+        ],
+        "summary": "Which cache layers this site has.",
+        "description": "Reports every known cache plugin that is installed (active or not) with its version, what it caches, which purge scopes it supports, and where it keeps its settings so you can read or change them through /options. Also reports the persistent object cache, advanced-cache.php, the WP_CACHE constant, opcache, and whether the automatic purge is on.",
+        "responses": {
+          "200": {
+            "description": "Cache status"
+          }
+        }
+      }
+    },
+    "/cache/purge": {
+      "post": {
+        "tags": [
+          "Cache"
+        ],
+        "summary": "Clear caches across whichever cache plugins are active.",
+        "description": "scope \"all\" (default) clears everything; \"post\" needs post_id; \"url\" needs url. A plugin that cannot do the narrower scope falls back to a full purge and reports widened:true, so a request for one URL never silently clears the whole site without saying so. Optionally also flushes the object cache and opcache.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "all",
+                      "post",
+                      "url"
+                    ],
+                    "default": "all"
+                  },
+                  "post_id": {
+                    "type": "integer",
+                    "description": "Required for scope \"post\"."
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Required for scope \"url\"."
+                  },
+                  "layers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Limit to these driver slugs, e.g. [\"wp-rocket\"]."
+                  },
+                  "object_cache": {
+                    "type": "boolean",
+                    "description": "Also run wp_cache_flush()."
+                  },
+                  "opcache": {
+                    "type": "boolean",
+                    "description": "Also run opcache_reset()."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-layer purge result"
+          }
+        }
+      }
+    },
+    "/cache/auto-purge": {
+      "post": {
+        "tags": [
+          "Cache"
+        ],
+        "summary": "Turn the purge-after-write behaviour on or off.",
+        "description": "On by default. When on, a PressPilot request that changes content purges once at the end of the request — once per request, not once per write.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New state"
           }
         }
       }

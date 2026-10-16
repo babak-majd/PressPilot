@@ -40,6 +40,7 @@ class PP_Auth {
 		'plugins'   => 'Plugins (install, activate, deactivate, delete)',
 		'settings'  => 'Site settings (options, homepage, permalinks)',
 		'config'    => 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)',
+		'cache'     => 'Caching (detect cache plugins, purge caches, automatic purge after writes)',
 	);
 
 	/**
@@ -60,6 +61,7 @@ class PP_Auth {
 			'plugins'   => __( 'Plugins (install, activate, deactivate, delete)', 'presspilot' ),
 			'settings'  => __( 'Site settings (options, homepage, permalinks)', 'presspilot' ),
 			'config'    => __( 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)', 'presspilot' ),
+			'cache'     => __( 'Caching (detect cache plugins, purge caches, automatic purge after writes)', 'presspilot' ),
 		);
 	}
 

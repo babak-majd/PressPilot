@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.4.0
+Stable tag: 2.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,13 @@ Common on Apache CGI. Turn on "Key in the URL" on the Agents screen and use the 
 instead — note the key then travels in the URL, where server and proxy logs can record it.
 
 == Changelog ==
+
+= 2.5.0 =
+* **Cache plugins are now first-class.** `GET /cache` reports every cache layer in front of the site — WP Rocket, LiteSpeed Cache, WP-Optimize, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Autoptimize, Breeze, SiteGround Optimizer, Hummingbird and Nginx Helper — with its version, what it caches, which purge scopes it supports, and where it keeps its settings. Also reports the persistent object cache, `advanced-cache.php`, `WP_CACHE` and opcache.
+* `POST /cache/purge` clears them all through one call, by `scope`: everything, a single post, or a single URL, optionally flushing the object cache and opcache too. A plugin that cannot do the narrow scope falls back to a full purge and says so with `widened: true`, so "I purged one URL" never quietly means "I cleared the site".
+* **Purges automatically after its own writes.** Editing a page and then fetching the URL to check the result used to return whatever the cache had from before the edit — a failure that looks exactly like a write that did not take. PressPilot now clears the cache once at the end of any of its own requests that changed something: once per request, not once per write, so a twenty-page batch triggers one purge. Switch it off with `POST /cache/auto-purge {"enabled": false}`.
+* Every plugin is probed before it is called, so one that is absent — or whose API moved between versions — is skipped rather than throwing. Cache-plugin settings are deliberately read through `/options` (which snapshots and can roll back) instead of being written blind from here; `GET /cache` tells you which option each plugin uses.
+* New `cache` scope, on by default like the others, so existing keys keep working.
 
 = 2.4.0 =
 * **Updates from GitHub, in the normal WordPress places.** PressPilot now reports new releases on Dashboard > Updates and the Plugins screen, "View version details" shows the release notes, and per-plugin auto-updates can be switched on. It hangs off the `Update URI` header, so WordPress asks GitHub instead of the wordpress.org directory — an unrelated plugin sharing the slug there can never be pushed over this install. Adds a "Check for updates" link on the Plugins screen for an immediate check.

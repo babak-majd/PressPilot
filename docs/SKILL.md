@@ -305,6 +305,9 @@ Custom CSS, and turn off Elementor's own Google Fonts with
 | GET/POST | `/assets` `/assets/upload` | media | host fonts/CSS/SVG as real cacheable files (base64) — avoid inlining big base64 blobs |
 | POST | `/batch` | — | run up to 25 sub-requests `{method,path,body}` in one call |
 | POST | `/cleanup/elementor-meta` | content | purge leftover `_elementor_*` meta (optionally `revisions_only`) |
+| GET | `/cache` | cache | which cache plugins are in front of the site, what each can purge, where its settings live |
+| POST | `/cache/purge` | cache | clear caches — `scope` `all`/`post`/`url` (+ `object_cache`, `opcache`) |
+| POST | `/cache/auto-purge` | cache | turn the purge-after-write behaviour on/off (`enabled`) |
 | POST | `/forms/submit` (public) · GET/POST `/forms/config` | settings | native contact form → `wp_mail` (honeypot + rate limit) |
 | GET/POST | `/content` | content | list / create page or post (`blocks`, `content`, `elementor_data`, `builder`, `clear_elementor`) |
 | GET/PUT/DELETE | `/content/{id}` | content | read / update / trash |
@@ -359,6 +362,44 @@ A disabled **scope** (see the Permissions screen / `GET /scopes`) returns `403 p
   at the end of a migration, `POST /plugins/deactivate { "slug":"elementor" }`. (The API refuses
   to deactivate/delete PressPilot itself.)
 
+
+## 11b. Caching — why your edit "did not apply"
+
+If you change a page and then fetch the URL to check your work, a page cache
+will happily hand you the version from before your edit. That failure looks
+exactly like a write that did not take, and it is the most common reason an
+agent starts "fixing" something that was never broken.
+
+**PressPilot already purges for you.** After any PressPilot request that changes
+content, it clears the cache once, at the end of the request — once per request,
+not once per write, so a 20-page batch triggers one purge. Turn it off with
+`POST /cache/auto-purge {"enabled": false}` if you are doing something where that
+is wrong.
+
+**When a page still looks stale**, in order:
+
+1. `GET /cache` — see what is actually in front of the site. If `layers` is empty
+   and `page_cache` says none detected, no WordPress plugin is caching, and the
+   stale copy is coming from the host, Cloudflare or a reverse proxy — purging
+   through WordPress cannot help, and you should say so rather than retrying.
+2. `POST /cache/purge {"scope":"url","url":"…"}` — narrow and fast.
+3. `POST /cache/purge {"scope":"all","object_cache":true,"opcache":true}` — when a
+   change is site-wide (CSS, global styles, a template part) or you have just
+   deployed PHP.
+
+Read the result per layer. `widened: true` means that plugin could not purge just
+the URL or post you asked for and cleared everything instead — worth knowing
+before you tell someone you made a surgical change.
+
+**Changing a cache plugin's settings** goes through `/options`, not through this
+API: `GET /cache` tells you the option name or prefix each plugin uses, and
+`/options` snapshots before it writes so `POST /config/restore` can put it back.
+Those option keys move between plugin versions, so read before you write.
+
+Known plugins: WP Rocket, LiteSpeed Cache, WP-Optimize, W3 Total Cache, WP Super
+Cache, WP Fastest Cache, Cache Enabler, Autoptimize, Breeze, SiteGround
+Optimizer, Hummingbird, Nginx Helper. Each is probed before it is called, so an
+absent plugin — or an API that moved — is skipped, never fatal.
 
 ## 12. Configuring plugins & the site (the config assistant)
 
