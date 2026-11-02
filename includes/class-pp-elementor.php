@@ -152,7 +152,7 @@ class PP_Elementor {
 			'posts_per_page' => -1,
 			'fields'         => 'ids',
 			'no_found_rows'  => false,
-			'meta_query'     => array(
+			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- one-off audit of Elementor-built posts by edit-mode meta; bounded and run on demand.
 				array( 'key' => self::META_EDIT_MODE, 'value' => 'builder' ),
 			),
 		) );
@@ -186,7 +186,7 @@ class PP_Elementor {
 
 		// Any lingering Elementor meta anywhere (belt-and-braces).
 		global $wpdb;
-		$orphan_meta = (int) $wpdb->get_var(
+		$orphan_meta = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- diagnostic scan for orphaned Elementor meta; a maintenance count that must read the live table.
 			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key LIKE '\_elementor\_%'"
 		);
 
@@ -248,19 +248,19 @@ class PP_Elementor {
 		global $wpdb;
 
 		if ( $revisions_only ) {
-			$affected = (int) $wpdb->query(
+			$affected = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- bulk purge of Elementor revision meta; a maintenance DELETE, nothing to cache.
 				"DELETE pm FROM {$wpdb->postmeta} pm
 				 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
 				 WHERE pm.meta_key LIKE '\_elementor\_%'
 				   AND p.post_type IN ('revision')"
 			);
 		} else {
-			$affected = (int) $wpdb->query(
+			$affected = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- bulk purge of all Elementor meta; a maintenance DELETE, nothing to cache.
 				"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '\_elementor\_%'"
 			);
 		}
 
-		$remaining = (int) $wpdb->get_var(
+		$remaining = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- post-purge verification count; must read the live table.
 			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key LIKE '\_elementor\_%'"
 		);
 

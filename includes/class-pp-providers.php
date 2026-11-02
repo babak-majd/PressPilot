@@ -54,7 +54,7 @@ class PP_Providers {
 			'anthropic'   => array(
 				'label'         => 'Anthropic (Claude)',
 				'api'           => 'anthropic',
-				'base_url'      => 'https://api.anthropic.com/v1',
+				'base_url'      => 'https://api.anthropic.com/v1', // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- provider registry entry; the plugin targets WP 5.8+ where the WP 7.0 AI Client does not exist, and must let the user pick their own provider.
 				'default_model' => 'claude-opus-5',
 				'keys_url'      => 'https://console.anthropic.com/settings/keys',
 				'note'          => __( 'Claude directly from Anthropic. Best tool-use reliability for long site builds.', 'presspilot' ),
@@ -62,7 +62,7 @@ class PP_Providers {
 			'openai'      => array(
 				'label'         => 'OpenAI',
 				'api'           => 'openai',
-				'base_url'      => 'https://api.openai.com/v1',
+				'base_url'      => 'https://api.openai.com/v1', // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- provider registry entry; the plugin targets WP 5.8+ where the WP 7.0 AI Client does not exist, and must let the user pick their own provider.
 				'default_model' => '',
 				'keys_url'      => 'https://platform.openai.com/api-keys',
 				'note'          => __( 'The same key your Codex CLI uses.', 'presspilot' ),
@@ -70,9 +70,9 @@ class PP_Providers {
 			'openrouter'  => array(
 				'label'         => 'OpenRouter',
 				'api'           => 'openai',
-				'base_url'      => 'https://openrouter.ai/api/v1',
+				'base_url'      => 'https://openrouter.ai/api/v1', // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- provider registry entry; the plugin targets WP 5.8+ where the WP 7.0 AI Client does not exist, and must let the user pick their own provider.
 				'default_model' => '',
-				'keys_url'      => 'https://openrouter.ai/keys',
+				'keys_url'      => 'https://openrouter.ai/keys', // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- a link to the user's API-key dashboard, not an API call.
 				'note'          => __( 'One key, hundreds of models from every vendor. Model ids look like "anthropic/claude-sonnet-4.5".', 'presspilot' ),
 			),
 			'agentrouter' => array(

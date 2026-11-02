@@ -29,7 +29,7 @@ class PP_DB {
 
 	private static function table_exists( $table ) {
 		global $wpdb;
-		$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- existence check for a dynamic table; prepared, and schema lookups are not cached.
 		return $found === $table;
 	}
 
@@ -42,12 +42,12 @@ class PP_DB {
 		global $wpdb;
 		$prefix = isset( $args['prefix'] ) && '' !== $args['prefix'] ? (string) $args['prefix'] : $wpdb->prefix;
 		$like   = $wpdb->esc_like( $prefix ) . '%';
-		$names  = (array) $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+		$names  = (array) $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- listing tables by prefix; prepared, and schema lookups are not cached.
 		$out    = array();
 		foreach ( $names as $t ) {
 			$out[] = array(
 				'table' => $t,
-				'rows'  => (int) $wpdb->get_var( "SELECT COUNT(*) FROM `$t`" ), // table name from SHOW TABLES, safe.
+				'rows'  => (int) $wpdb->get_var( "SELECT COUNT(*) FROM `$t`" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $t is a real table name returned by SHOW TABLES; a row count that is not cached.
 			);
 		}
 		return array( 'prefix' => $prefix, 'tables' => $out, 'count' => count( $out ) );
@@ -63,7 +63,7 @@ class PP_DB {
 			}
 		}
 		global $wpdb;
-		$cols = $wpdb->get_results( "DESCRIBE `$table`", ARRAY_A );
+		$cols = $wpdb->get_results( "DESCRIBE `$table`", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $table is validated by valid_ident() and table_exists(); DESCRIBE takes an identifier, not a bindable value.
 		return array( 'table' => $table, 'columns' => $cols );
 	}
 
@@ -79,11 +79,14 @@ class PP_DB {
 		$limit = min( self::MAX_ROWS, max( 1, (int) ( isset( $args['limit'] ) ? $args['limit'] : 100 ) ) );
 
 		if ( ! empty( $args['raw'] ) ) {
+			if ( ! PP_Danger::enabled( 'raw_sql' ) ) {
+				return PP_Helpers::error( 'pp_raw_sql_disabled', 'Raw SQL SELECT is disabled. Enable the red "Allow raw SQL SELECT" toggle on the PressPilot Permissions screen (it auto-disables after 30 minutes). The structured form needs no opt-in.', 403 );
+			}
 			$sql = trim( (string) $args['raw'] );
 			if ( ! preg_match( '/^SELECT\b/i', $sql ) || false !== strpos( rtrim( $sql, ';' ), ';' ) ) {
 				return PP_Helpers::error( 'pp_bad_sql', 'raw must be a single read-only SELECT statement.', 400 );
 			}
-			$rows = $wpdb->get_results( $sql, ARRAY_A );
+			$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- capability- and API-key-gated read-only SELECT, validated to a single statement; an arbitrary caller-supplied query that cannot be parameterised.
 			if ( null === $rows && $wpdb->last_error ) {
 				return PP_Helpers::error( 'pp_sql_error', $wpdb->last_error, 400 );
 			}
@@ -122,8 +125,8 @@ class PP_DB {
 			$sql .= " ORDER BY `{$args['order']}` $dir";
 		}
 		$sql .= ' LIMIT ' . (int) $limit;
-		$prepared = $params ? $wpdb->prepare( $sql, $params ) : $sql;
-		$rows     = $wpdb->get_results( $prepared, ARRAY_A );
+		$prepared = $params ? $wpdb->prepare( $sql, $params ) : $sql; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is assembled only from identifiers validated by valid_ident(); row values are bound via $params.
+		$rows     = $wpdb->get_results( $prepared, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $prepared is a $wpdb->prepare() result or a query built from valid_ident()-validated identifiers; not cached by design.
 		if ( null === $rows && $wpdb->last_error ) {
 			return PP_Helpers::error( 'pp_sql_error', $wpdb->last_error, 400 );
 		}
@@ -161,7 +164,7 @@ class PP_DB {
 			if ( $dry ) {
 				return array( 'dry_run' => true, 'op' => 'insert', 'table' => $table, 'would_insert' => $data );
 			}
-			$ok = $wpdb->insert( $table, $data );
+			$ok = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- $wpdb->insert() escapes its values; writing a caller-chosen custom table is this layer's purpose.
 			if ( false === $ok ) {
 				return PP_Helpers::error( 'pp_insert_failed', $wpdb->last_error ?: 'insert failed', 400 );
 			}
@@ -186,9 +189,9 @@ class PP_DB {
 			if ( empty( $data ) ) {
 				return PP_Helpers::error( 'pp_no_data', 'update needs "data".', 400 );
 			}
-			$n = $wpdb->update( $table, $data, $where );
+			$n = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $wpdb->update() escapes its values; writing a caller-chosen custom table is this layer's purpose.
 		} else {
-			$n = $wpdb->delete( $table, $where );
+			$n = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $wpdb->delete() escapes its values; deleting from a caller-chosen custom table is this layer's purpose.
 		}
 		if ( false === $n ) {
 			return PP_Helpers::error( 'pp_write_failed', $wpdb->last_error ?: 'write failed', 400 );

@@ -810,7 +810,7 @@ class PP_REST {
 
 		$attachment_id = media_handle_sideload( $file_array, 0, $request->get_param( 'title' ) );
 		if ( is_wp_error( $attachment_id ) ) {
-			@unlink( $tmp );
+			wp_delete_file( $tmp );
 			return $attachment_id;
 		}
 
@@ -998,6 +998,9 @@ class PP_REST {
 	}
 
 	public function install_plugin( $request ) {
+		if ( ! PP_Danger::enabled( 'plugin_install' ) ) {
+			return rest_ensure_response( PP_Helpers::error( 'pp_install_disabled', 'Installing plugins is disabled. Enable the red "Allow installing plugins" toggle on the PressPilot Permissions screen (it auto-disables after 30 minutes).', 403 ) );
+		}
 		return rest_ensure_response( PP_Plugins::install( array(
 			'slug'     => $request->get_param( 'slug' ),
 			'zip'      => $request->get_param( 'zip' ),
@@ -1392,6 +1395,9 @@ class PP_REST {
 	}
 
 	public function config_admin_ajax( $request ) {
+		if ( ! PP_Danger::enabled( 'admin_ajax' ) ) {
+			return rest_ensure_response( PP_Helpers::error( 'pp_admin_ajax_disabled', 'admin-ajax dispatch is disabled. Enable the red "Allow admin-ajax dispatch" toggle on the PressPilot Permissions screen (it auto-disables after 30 minutes).', 403 ) );
+		}
 		return rest_ensure_response( PP_Config::admin_ajax( array(
 			'action' => $request->get_param( 'action' ),
 			'args'   => $request->get_param( 'args' ),
@@ -1400,7 +1406,10 @@ class PP_REST {
 	}
 
 	public function config_exec( $request ) {
-		return rest_ensure_response( PP_Config::exec_php( array( 'code' => $request->get_param( 'code' ) ) ) );
+		if ( ! class_exists( 'PP_Exec' ) ) {
+			return rest_ensure_response( PP_Helpers::error( 'pp_exec_unavailable', 'Code execution is not available in this build of PressPilot.', 404 ) );
+		}
+		return rest_ensure_response( PP_Exec::run( array( 'code' => $request->get_param( 'code' ) ) ) );
 	}
 
 	private function summary( $post ) {

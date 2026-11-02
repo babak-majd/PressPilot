@@ -2,9 +2,8 @@
 /**
  * Plugin Name:       PressPilot
  * Plugin URI:        https://bobclub.ir
- * Update URI:        https://github.com/babak-majd/PressPilot
  * Description:        An AI copilot for WordPress. Connect Claude Code, OpenAI Codex, OpenRouter or AgentRouter straight to your site over MCP — or use the built-in copilot — and let an agent build and manage everything: pages, posts, blocks, themes, menus, templates, media, settings and plugin configuration.
- * Version:           2.5.0
+ * Version:           3.1.2
  * Author:            Baabak Majd
  * Author URI:        https://bobclub.ir
  * Text Domain:       presspilot
@@ -19,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PP_VERSION', '2.5.0' );
+define( 'PP_VERSION', '3.1.2' );
 define( 'PP_PRODUCT', 'PressPilot' );
 define( 'PP_TAGLINE', 'AI copilot for WordPress' );
 define( 'PP_FILE', __FILE__ );
@@ -28,6 +27,7 @@ define( 'PP_URL', plugin_dir_url( __FILE__ ) );
 define( 'PP_REST_NS', 'presspilot/v1' );
 
 require_once PP_PATH . 'includes/class-pp-helpers.php';
+require_once PP_PATH . 'includes/class-pp-danger.php';
 require_once PP_PATH . 'includes/class-pp-auth.php';
 require_once PP_PATH . 'includes/class-pp-elementor.php';
 require_once PP_PATH . 'includes/class-pp-gutenberg.php';
@@ -48,15 +48,20 @@ require_once PP_PATH . 'includes/class-pp-agent.php';
 require_once PP_PATH . 'includes/class-pp-rest.php';
 require_once PP_PATH . 'includes/class-pp-admin.php';
 require_once PP_PATH . 'includes/class-pp-cache.php';
-require_once PP_PATH . 'includes/class-pp-github-updater.php';
+
+// The /exec code-execution escape hatch (PP_Exec) ships only in the full build,
+// never on WordPress.org where eval() is not permitted. Load it when present.
+if ( file_exists( PP_PATH . 'includes/class-pp-exec.php' ) ) {
+	require_once PP_PATH . 'includes/class-pp-exec.php';
+}
 
 /**
  * On activation: make sure an API key exists so the user can copy it immediately.
  */
-function pp_activate() {
+function presspilot_activate() {
 	PP_Auth::maybe_generate_key();
 }
-register_activation_hook( __FILE__, 'pp_activate' );
+register_activation_hook( __FILE__, 'presspilot_activate' );
 
 /**
  * Load the dashboard translations.
@@ -73,19 +78,18 @@ register_activation_hook( __FILE__, 'pp_activate' );
  * requested before WordPress has settled the locale, and every string here is
  * used on an admin screen, long after this point.
  */
-function pp_load_textdomain() {
+function presspilot_load_textdomain() {
+	// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- the plugin bundles its own fa_IR/ar/de_DE translations in /languages, which WordPress.org's automatic language loading does not cover.
 	load_plugin_textdomain( 'presspilot', false, dirname( plugin_basename( PP_FILE ) ) . '/languages' );
 }
-add_action( 'init', 'pp_load_textdomain' );
+add_action( 'init', 'presspilot_load_textdomain' );
 
 /**
  * Boot the plugin.
  */
-function pp_boot() {
+function presspilot_boot() {
 	PP_Auth::instance();
 	PP_REST::instance();
-	// Not admin-only: WordPress also runs its plugin update check from cron.
-	PP_GitHub_Updater::init();
 	// Clears the page cache after our own writes, so the URL an agent fetches
 	// back is the page it just wrote rather than whatever was cached.
 	PP_Cache::init();
@@ -98,4 +102,4 @@ function pp_boot() {
 		add_filter( 'elementor/frontend/print_google_fonts', '__return_false' );
 	}
 }
-add_action( 'plugins_loaded', 'pp_boot' );
+add_action( 'plugins_loaded', 'presspilot_boot' );

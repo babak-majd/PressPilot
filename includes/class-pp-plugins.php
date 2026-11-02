@@ -83,7 +83,7 @@ class PP_Plugins {
 		$upgrader = new Plugin_Upgrader( $skin );
 		$result   = $upgrader->install( $source, array( 'overwrite_package' => true ) );
 		if ( $cleanup ) {
-			@unlink( $cleanup );
+			wp_delete_file( $cleanup );
 		}
 
 		if ( is_wp_error( $result ) ) {

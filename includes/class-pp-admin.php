@@ -42,6 +42,7 @@ class PP_Admin {
 		add_action( 'admin_post_pp_save_scopes', array( $this, 'handle_save_scopes' ) );
 		add_action( 'admin_post_pp_save_mcp', array( $this, 'handle_save_mcp' ) );
 		add_action( 'admin_post_pp_save_agent', array( $this, 'handle_save_agent' ) );
+		add_action( 'admin_post_pp_extend_danger', array( $this, 'handle_extend_danger' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( PP_FILE ), array( $this, 'action_links' ) );
 	}
 
@@ -294,10 +295,33 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		PP_Auth::save_scopes( $enabled );
 		// Master on/off switch + optional IP allow-list.
 		PP_Auth::set_enabled( ! empty( $_POST['pp_api_enabled'] ) );
-		PP_Auth::save_allowed_ips( isset( $_POST['pp_allowed_ips'] ) ? wp_unslash( $_POST['pp_allowed_ips'] ) : '' );
-		// Dangerous opt-in: allow the /exec code-execution endpoint (off by default).
-		update_option( PP_Config::EXEC_OPTION, ! empty( $_POST['pp_allow_exec'] ) ? '1' : '0', false );
+		PP_Auth::save_allowed_ips( isset( $_POST['pp_allowed_ips'] ) ? sanitize_textarea_field( wp_unslash( $_POST['pp_allowed_ips'] ) ) : '' );
+		// Dangerous, time-limited opt-ins: each auto-disables 30 minutes after being
+		// switched on. Saving the Permissions page re-arms whichever boxes are ticked.
+		foreach ( array_keys( PP_Danger::labels() ) as $pp_dkey ) {
+			if ( 'exec' === $pp_dkey && ! class_exists( 'PP_Exec' ) ) {
+				continue;
+			}
+			PP_Danger::set( $pp_dkey, ! empty( $_POST[ 'pp_allow_' . $pp_dkey ] ) );
+		}
 		wp_safe_redirect( add_query_arg( 'pp_scopes_saved', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
+		exit;
+	}
+
+	/**
+	 * "Extend 10 minutes" for one dangerous capability. Adds exactly 600 seconds to
+	 * its auto-off timer â€” no more, no less â€” and only while it is currently on.
+	 */
+	public function handle_extend_danger() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_extend_danger' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
+		}
+		$cap  = isset( $_POST['pp_cap'] ) ? sanitize_key( wp_unslash( $_POST['pp_cap'] ) ) : '';
+		$caps = PP_Danger::labels();
+		if ( isset( $caps[ $cap ] ) ) {
+			PP_Danger::extend( $cap, 600 );
+		}
+		wp_safe_redirect( add_query_arg( 'pp_extended', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
 		exit;
 	}
 
@@ -319,11 +343,11 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		}
 		PP_Providers::save_config(
 			array(
-				'provider'  => isset( $_POST['pp_provider'] ) ? wp_unslash( $_POST['pp_provider'] ) : '',
-				'api_key'   => isset( $_POST['pp_api_key'] ) ? wp_unslash( $_POST['pp_api_key'] ) : '',
-				'model'     => isset( $_POST['pp_model'] ) ? wp_unslash( $_POST['pp_model'] ) : '',
-				'base_url'  => isset( $_POST['pp_base_url'] ) ? wp_unslash( $_POST['pp_base_url'] ) : '',
-				'max_steps' => isset( $_POST['pp_max_steps'] ) ? wp_unslash( $_POST['pp_max_steps'] ) : '',
+				'provider'  => isset( $_POST['pp_provider'] ) ? sanitize_text_field( wp_unslash( $_POST['pp_provider'] ) ) : '',
+				'api_key'   => isset( $_POST['pp_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['pp_api_key'] ) ) : '',
+				'model'     => isset( $_POST['pp_model'] ) ? sanitize_text_field( wp_unslash( $_POST['pp_model'] ) ) : '',
+				'base_url'  => isset( $_POST['pp_base_url'] ) ? esc_url_raw( wp_unslash( $_POST['pp_base_url'] ) ) : '',
+				'max_steps' => isset( $_POST['pp_max_steps'] ) ? absint( wp_unslash( $_POST['pp_max_steps'] ) ) : '',
 			)
 		);
 		wp_safe_redirect( add_query_arg( 'pp_saved', '1', admin_url( 'admin.php?page=presspilot-copilot' ) ) );
@@ -350,7 +374,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		<div class="wrap pp-wrap">
 			<?php $this->hero( __( 'Connect', 'presspilot' ) ); ?>
 
-			<?php if ( isset( $_GET['pp_regenerated'] ) ) : ?>
+			<?php if ( isset( $_GET['pp_regenerated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading a one-shot display flag set by our own redirect; the value is not used. ?>
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'A new API key was generated. Update it wherever you use it â€” the prompt below already contains the new key.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
@@ -492,7 +516,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		<div class="wrap pp-wrap">
 			<?php $this->hero( __( 'Agents â€” direct MCP connection', 'presspilot' ) ); ?>
 
-			<?php if ( isset( $_GET['pp_saved'] ) ) : ?>
+			<?php if ( isset( $_GET['pp_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading a one-shot display flag set by our own redirect; the value is not used. ?>
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Saved.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
@@ -500,10 +524,12 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 				<h2><span class="dashicons dashicons-rest-api"></span> <?php echo esc_html__( 'Model Context Protocol endpoint', 'presspilot' ); ?></h2>
 				<p class="description">
 					<?php
+					/* translators: %d: number of native tools exposed. */
+					$tool_count = sprintf( _n( '%d native tool', '%d native tools', count( $tools ), 'presspilot' ), count( $tools ) );
 					printf(
 						/* translators: %s: the number of tools exposed, already wrapped in <strong>. */
 						esc_html__( 'MCP is the standard way an AI agent plugs into an external system. Point a client at this URL and your site shows up inside it as %s â€” no prompt engineering, no hand-written HTTP calls. The agent Skill is delivered automatically on connect, so agents follow this site\'s build rules from their first message.', 'presspilot' ),
-						'<strong>' . esc_html( sprintf( _n( '%d native tool', '%d native tools', count( $tools ), 'presspilot' ), count( $tools ) ) ) . '</strong>'
+						'<strong>' . esc_html( $tool_count ) . '</strong>'
 					);
 					?>
 				</p>
@@ -669,7 +695,7 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		<div class="wrap pp-wrap">
 			<?php $this->hero( __( 'Copilot', 'presspilot' ) ); ?>
 
-			<?php if ( isset( $_GET['pp_saved'] ) ) : ?>
+			<?php if ( isset( $_GET['pp_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading a one-shot display flag set by our own redirect; the value is not used. ?>
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Copilot settings saved.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
@@ -1061,8 +1087,11 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 		<div class="wrap pp-wrap">
 			<?php $this->hero( __( 'Permissions', 'presspilot' ) ); ?>
 
-			<?php if ( isset( $_GET['pp_scopes_saved'] ) ) : ?>
+			<?php if ( isset( $_GET['pp_scopes_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading a one-shot display flag set by our own redirect; the value is not used. ?>
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Permissions saved.', 'presspilot' ); ?></p></div>
+			<?php endif; ?>
+			<?php if ( isset( $_GET['pp_extended'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading a one-shot display flag set by our own redirect; the value is not used. ?>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Extended by 10 minutes.', 'presspilot' ); ?></p></div>
 			<?php endif; ?>
 
 			<div class="pp-card">
@@ -1145,23 +1174,33 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 						<?php endforeach; ?>
 					</div>
 
-					<div class="pp-scope" style="border-color:#d63638;background:#fcf0f1;margin-top:14px;align-items:flex-start">
-						<input type="checkbox" name="pp_allow_exec" value="1" <?php checked( '1' === (string) get_option( PP_Config::EXEC_OPTION, '0' ) ); ?>>
-						<span>
-							<span class="pp-scope-key" style="color:#d63638"><?php echo esc_html__( 'Allow code execution', 'presspilot' ); ?> (<code>/exec</code>)</span>
-							<span class="pp-scope-desc">
-								<?php echo esc_html__( 'Lets the API run arbitrary PHP â€” the universal fallback for configuring any plugin.', 'presspilot' ); ?>
-								<strong><?php echo esc_html__( 'Off by default.', 'presspilot' ); ?></strong>
-								<?php
-								printf(
-									/* translators: %s: the capability name, formatted as code. */
-									esc_html__( 'Only enable it if you trust the API key holder completely; it is as powerful as installing a plugin. Requires the %s capability above.', 'presspilot' ),
-									'<code>config</code>'
-								);
-								?>
+					<?php
+					foreach ( PP_Danger::labels() as $pp_dkey => $pp_d ) :
+						if ( 'exec' === $pp_dkey && ! class_exists( 'PP_Exec' ) ) {
+							continue;
+						}
+						$pp_d_on   = PP_Danger::enabled( $pp_dkey );
+						$pp_d_mins = $pp_d_on ? (int) ceil( PP_Danger::remaining( $pp_dkey ) / 60 ) : 0;
+						?>
+						<div class="pp-scope" style="border-color:#d63638;background:#fcf0f1;margin-top:14px;align-items:flex-start">
+							<input type="checkbox" name="pp_allow_<?php echo esc_attr( $pp_dkey ); ?>" value="1" <?php checked( $pp_d_on ); ?>>
+							<span>
+								<span class="pp-scope-key" style="color:#d63638">&#9888; <?php echo esc_html( $pp_d['label'] ); ?> (<code><?php echo esc_html( $pp_d['tag'] ); ?></code>)</span>
+								<span class="pp-scope-desc">
+									<?php echo esc_html( $pp_d['desc'] ); ?>
+									<strong style="color:#d63638"><?php echo esc_html__( 'Off by default. Dangerous â€” only enable it if you trust the API-key holder completely. It auto-disables 30 minutes after you switch it on.', 'presspilot' ); ?></strong>
+									<?php if ( $pp_d_on ) : ?>
+										<strong style="color:#d63638">&#9201;
+										<?php
+										/* translators: %d: minutes remaining before this capability auto-disables. */
+										echo esc_html( sprintf( _n( 'Active now â€” auto-disables in %d minute.', 'Active now â€” auto-disables in %d minutes.', $pp_d_mins, 'presspilot' ), $pp_d_mins ) );
+										?>
+										</strong>
+									<?php endif; ?>
+								</span>
 							</span>
-						</span>
-					</div>
+						</div>
+					<?php endforeach; ?>
 
 					<p class="description" style="margin-top:10px">
 						<?php
@@ -1179,6 +1218,42 @@ Respect the site's Permissions: some capabilities may be turned off (see /site â
 					<?php submit_button( __( 'Save permissions', 'presspilot' ) ); ?>
 				</form>
 			</div>
+
+			<?php
+			$pp_active = array();
+			foreach ( PP_Danger::labels() as $pp_ak => $pp_al ) {
+				if ( PP_Danger::enabled( $pp_ak ) ) {
+					$pp_active[ $pp_ak ] = $pp_al;
+				}
+			}
+			if ( $pp_active ) :
+				?>
+			<div class="pp-card" style="border-color:#d63638;background:#fcf0f1">
+				<h2 style="color:#d63638"><span class="dashicons dashicons-clock"></span> <?php echo esc_html__( 'Active dangerous capabilities', 'presspilot' ); ?></h2>
+				<p class="description"><?php echo esc_html__( 'Each capability below switches itself off when its timer reaches zero. "Extend" adds exactly 10 minutes.', 'presspilot' ); ?></p>
+				<?php foreach ( $pp_active as $pp_ak => $pp_al ) : ?>
+					<div class="pp-active-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:10px 0">
+						<strong style="min-width:220px;color:#d63638"><?php echo esc_html( $pp_al['label'] ); ?> <code><?php echo esc_html( $pp_al['tag'] ); ?></code></strong>
+						<span><?php echo esc_html__( 'Auto-off in', 'presspilot' ); ?> <span class="pp-timer" data-left="<?php echo esc_attr( (int) PP_Danger::remaining( $pp_ak ) ); ?>" style="font-variant-numeric:tabular-nums;font-weight:700;color:#d63638">&mdash;</span></span>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin:0">
+							<input type="hidden" name="action" value="pp_extend_danger">
+							<input type="hidden" name="pp_cap" value="<?php echo esc_attr( $pp_ak ); ?>">
+							<?php wp_nonce_field( 'pp_extend_danger' ); ?>
+							<button type="submit" class="button button-secondary"><?php echo esc_html__( 'Extend 10 minutes', 'presspilot' ); ?></button>
+						</form>
+					</div>
+				<?php endforeach; ?>
+			</div>
+				<?php
+				wp_print_inline_script_tag(
+					'(function(){var s=document.querySelectorAll(".pp-timer[data-left]");if(!s.length){return;}' .
+					'function f(n){n=Math.max(0,n|0);var m=Math.floor(n/60),x=n%60;return m+":"+(x<10?"0":"")+x;}' .
+					'function t(){s.forEach(function(e){var l=parseInt(e.getAttribute("data-left"),10)||0;e.textContent=f(l);' .
+					'if(l<=0){var r=e.closest(".pp-active-row");if(r){r.style.opacity="0.5";}}else{e.setAttribute("data-left",l-1);}});}' .
+					't();setInterval(t,1000);}());'
+				);
+				?>
+			<?php endif; ?>
 
 			<?php $this->footer_note(); ?>
 		</div>

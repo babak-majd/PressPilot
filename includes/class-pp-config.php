@@ -62,7 +62,7 @@ class PP_Config {
 		}
 		if ( ! empty( $args['prefix'] ) ) {
 			$like  = $wpdb->esc_like( (string) $args['prefix'] ) . '%';
-			$found = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s ORDER BY option_name LIMIT 500", $like ) );
+			$found = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s ORDER BY option_name LIMIT 500", $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- prefix scan of the option_name index; a prepared read with no per-row object cache to use.
 			$names = array_merge( $names, (array) $found );
 		}
 		$names = array_values( array_unique( $names ) );
@@ -242,7 +242,7 @@ class PP_Config {
 			$names = array_map( 'strval', $args['keys'] );
 		} elseif ( ! empty( $args['prefix'] ) ) {
 			$like  = $wpdb->esc_like( (string) $args['prefix'] ) . '%';
-			$names = (array) $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 2000", $like ) );
+			$names = (array) $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 2000", $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- prefix scan of the option_name index; a prepared read with no per-row object cache to use.
 		} else {
 			$names = array_keys( wp_load_alloptions() );
 		}
@@ -471,12 +471,12 @@ class PP_Config {
 		$_POST    = $payload;    // phpcs:ignore
 		$_REQUEST = array_merge( $_REQUEST, $payload ); // phpcs:ignore
 		if ( ! defined( 'DOING_AJAX' ) ) {
-			define( 'DOING_AJAX', true );
+			define( 'DOING_AJAX', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- DOING_AJAX is a WordPress core constant we set to emulate an admin-ajax request; it is not ours to prefix.
 		}
 		ob_start();
 		$out = null;
 		try {
-			do_action( $hook );
+			do_action( $hook ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- firing an existing WordPress/third-party admin-ajax hook named by the caller, not a hook we define.
 		} catch ( \Throwable $e ) {
 			$out = array( 'exception' => $e->getMessage() );
 		}
@@ -494,45 +494,15 @@ class PP_Config {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* Universal escape hatch — arbitrary PHP (opt-in, OFF by default)    */
+	/* Universal escape hatch — arbitrary PHP (opt-in, OFF by default).   */
+	/* The eval() itself lives in PP_Exec (includes/class-pp-exec.php),   */
+	/* shipped only in the full build — never on WordPress.org, where     */
+	/* eval() is not permitted. These two members only read an option.    */
 	/* ------------------------------------------------------------------ */
 
 	const EXEC_OPTION = 'presspilot_allow_exec';
 
 	public static function exec_enabled() {
-		return defined( 'PP_ALLOW_EXEC' ) ? (bool) PP_ALLOW_EXEC : ( '1' === (string) get_option( self::EXEC_OPTION, '0' ) );
-	}
-
-	/**
-	 * Evaluate PHP and return its value + echoed output. Gated: only runs when the admin
-	 * has enabled it (option presspilot_allow_exec = '1', or the PP_ALLOW_EXEC constant).
-	 * The API key already grants plugin-install (i.e. code execution), so this is a
-	 * convenience of equal power, not a new trust boundary — but it stays OFF by default.
-	 *
-	 * @param array $args { code }
-	 * @return array|WP_Error
-	 */
-	public static function exec_php( $args ) {
-		if ( ! self::exec_enabled() ) {
-			return PP_Helpers::error( 'pp_exec_disabled', 'Code execution is disabled. Enable it on the PressPilot Permissions screen (or define PP_ALLOW_EXEC) before using /exec.', 403 );
-		}
-		$code = isset( $args['code'] ) ? (string) $args['code'] : '';
-		if ( '' === $code ) {
-			return PP_Helpers::error( 'pp_no_code', 'Provide "code" (PHP, without opening tags).', 400 );
-		}
-		ob_start();
-		$value = null;
-		$error = null;
-		try {
-			$value = eval( $code ); // phpcs:ignore Squiz.PHP.Eval -- intentional, admin-gated escape hatch.
-		} catch ( \Throwable $e ) {
-			$error = $e->getMessage();
-		}
-		$echoed = ob_get_clean();
-		return array(
-			'return' => $value,
-			'output' => $echoed,
-			'error'  => $error,
-		);
+		return PP_Danger::enabled( 'exec' );
 	}
 }

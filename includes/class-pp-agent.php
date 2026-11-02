@@ -155,7 +155,7 @@ class PP_Agent {
 
 		// Tool loops are long; give the request as much wall clock as the host allows.
 		if ( function_exists( 'set_time_limit' ) ) {
-			@set_time_limit( 0 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			@set_time_limit( 0 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, Squiz.PHP.DiscouragedFunctions.Discouraged -- long-running agent tool loop needs as much wall-clock as the host allows; guarded by function_exists().
 		}
 
 		$steps = array();

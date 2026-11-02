@@ -563,7 +563,7 @@ class PP_Tools {
 
 		$t['wp_install_plugin'] = array(
 			'title'       => 'Install a plugin',
-			'description' => 'Install a plugin from the WordPress.org repo (by slug) or from a base64 zip, optionally activating it.',
+			'description' => 'Install a plugin from the WordPress.org repo (by slug) or from a base64 zip, optionally activating it. Because this adds new code to the site it is OFF by default: an admin must switch on the red "Allow installing plugins" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled.',
 			'scope'       => 'plugins',
 			'method'      => 'POST',
 			'path'        => '/plugins/install',
@@ -831,7 +831,7 @@ class PP_Tools {
 
 		$t['wp_db_select'] = array(
 			'title'       => 'Read from a database table',
-			'description' => 'Structured read ({table, where, columns, order, limit}) or a single read-only SELECT via raw. Never modifies anything.',
+			'description' => 'Structured read ({table, where, columns, order, limit}) or a single read-only SELECT via raw. Never modifies anything. The structured form needs no opt-in; the raw SELECT form is OFF by default and needs the red "Allow raw SQL SELECT" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled.',
 			'scope'       => 'config',
 			'method'      => 'POST',
 			'path'        => '/db/select',
@@ -867,7 +867,7 @@ class PP_Tools {
 
 		$t['wp_admin_ajax'] = array(
 			'title'       => 'Dispatch an admin-ajax action',
-			'description' => 'Run a wp_ajax_{action} handler as an administrator — for plugins that only persist settings through admin-ajax.',
+			'description' => 'Run a wp_ajax_{action} handler as an administrator — for plugins that only persist settings through admin-ajax. OFF by default: needs the red "Allow admin-ajax dispatch" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled.',
 			'scope'       => 'config',
 			'method'      => 'POST',
 			'path'        => '/admin-ajax',
@@ -880,16 +880,19 @@ class PP_Tools {
 			'essential'   => false,
 		);
 
-		$t['wp_exec_php'] = array(
-			'title'       => 'Run PHP (last resort)',
-			'description' => 'Execute PHP inside WordPress and return the value. Disabled by default and as powerful as installing a plugin. This is the LAST resort: try an adapter, then the plugin\'s own REST API, then options/meta/terms, then the db tools, then admin-ajax first.',
-			'scope'       => 'config',
-			'method'      => 'POST',
-			'path'        => '/exec',
-			'schema'      => self::obj( array( 'code' => self::str( 'PHP source; use return to send a value back, e.g. return get_option("x");' ) ), array( 'code' ) ),
-			'read_only'   => false,
-			'essential'   => false,
-		);
+		// wp_exec_php exists only in the full build (PP_Exec ships outside WordPress.org).
+		if ( class_exists( 'PP_Exec' ) ) {
+			$t['wp_exec_php'] = array(
+				'title'       => 'Run PHP (last resort)',
+				'description' => 'Execute PHP inside WordPress and return the value. This is the LAST resort: try an adapter, then the plugin\'s own REST API, then options/meta/terms, then the db tools, then admin-ajax first. OFF by default and as powerful as installing a plugin: an admin must switch on the red "Allow code execution" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled. Gated by the API key and the config capability.',
+				'scope'       => 'config',
+				'method'      => 'POST',
+				'path'        => '/exec',
+				'schema'      => self::obj( array( 'code' => self::str( 'PHP source; use return to send a value back, e.g. return get_option("x");' ) ), array( 'code' ) ),
+				'read_only'   => false,
+				'essential'   => false,
+			);
+		}
 
 		/* ---------------- Generic escape hatches ---------------- */
 
@@ -949,6 +952,12 @@ class PP_Tools {
 	public static function available() {
 		$profile = self::profile();
 		$out     = array();
+		// Dangerous tools carry a second gate: a time-limited, admin opt-in toggle.
+		$danger_tools = array(
+			'wp_exec_php'       => 'exec',
+			'wp_install_plugin' => 'plugin_install',
+			'wp_admin_ajax'     => 'admin_ajax',
+		);
 		foreach ( self::all() as $name => $tool ) {
 			if ( 'essential' === $profile && empty( $tool['essential'] ) ) {
 				continue;
@@ -956,7 +965,7 @@ class PP_Tools {
 			if ( ! empty( $tool['scope'] ) && ! PP_Auth::scope_allowed( $tool['scope'] ) ) {
 				continue;
 			}
-			if ( 'wp_exec_php' === $name && ! PP_Config::exec_enabled() ) {
+			if ( isset( $danger_tools[ $name ] ) && ! PP_Danger::enabled( $danger_tools[ $name ] ) ) {
 				continue;
 			}
 			$out[ $name ] = $tool;

@@ -187,15 +187,15 @@ class PP_Cache {
 				},
 				'all'      => function () {
 					// The documented, version-stable entry point.
-					do_action( 'litespeed_purge_all' );
+					do_action( 'litespeed_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing LiteSpeed Cache's own public action, not a hook we define.
 					return true;
 				},
 				'post'     => function ( $id ) {
-					do_action( 'litespeed_purge_post', $id );
+					do_action( 'litespeed_purge_post', $id ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing LiteSpeed Cache's own public action, not a hook we define.
 					return true;
 				},
 				'url'      => function ( $url ) {
-					do_action( 'litespeed_purge_url', $url );
+					do_action( 'litespeed_purge_url', $url ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing LiteSpeed Cache's own public action, not a hook we define.
 					return true;
 				},
 			),
@@ -400,7 +400,7 @@ class PP_Cache {
 					return defined( 'BREEZE_VERSION' ) ? BREEZE_VERSION : null;
 				},
 				'all'      => function () {
-					do_action( 'breeze_clear_all_cache' );
+					do_action( 'breeze_clear_all_cache' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing Breeze's own public action, not a hook we define.
 					return true;
 				},
 				'post'     => null,
@@ -423,7 +423,7 @@ class PP_Cache {
 						sg_cachepress_purge_cache();
 						return true;
 					}
-					do_action( 'siteground_optimizer_flush_cache' );
+					do_action( 'siteground_optimizer_flush_cache' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing SiteGround Optimizer's own public action, not a hook we define.
 					return true;
 				},
 				'post'     => null,
@@ -442,7 +442,7 @@ class PP_Cache {
 					return defined( 'WPHB_VERSION' ) ? WPHB_VERSION : null;
 				},
 				'all'      => function () {
-					do_action( 'wphb_clear_page_cache' );
+					do_action( 'wphb_clear_page_cache' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing Hummingbird's own public action, not a hook we define.
 					return true;
 				},
 				'post'     => null,
@@ -461,7 +461,7 @@ class PP_Cache {
 					return null;
 				},
 				'all'      => function () {
-					do_action( 'rt_nginx_helper_purge_all' );
+					do_action( 'rt_nginx_helper_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- firing Nginx Helper's own public action, not a hook we define.
 					return true;
 				},
 				'post'     => null,

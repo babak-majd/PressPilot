@@ -45,7 +45,7 @@ class PP_FSE {
 				'post_type'      => $post_type,
 				'post_status'    => array( 'publish', 'auto-draft', 'draft' ),
 				'posts_per_page' => 200,
-				'tax_query'      => array(
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- querying block templates by their theme taxonomy; bounded and required for FSE template discovery.
 					array(
 						'taxonomy' => 'wp_theme',
 						'field'    => 'name',
@@ -174,7 +174,7 @@ class PP_FSE {
 				'post_status'    => array( 'publish', 'auto-draft', 'draft' ),
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
-				'tax_query'      => array(
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- querying block templates by their theme taxonomy; bounded and required for FSE template discovery.
 					array(
 						'taxonomy' => 'wp_theme',
 						'field'    => 'name',
@@ -253,8 +253,26 @@ class PP_FSE {
 			'theme'      => self::theme_slug(),
 			'post_id'    => (int) $post_id,
 			'global'     => $json,
-			'custom_css' => function_exists( 'wp_get_global_styles_custom_css' ) ? wp_get_global_styles_custom_css() : '',
+			'custom_css' => self::global_custom_css(),
 		);
+	}
+
+	/**
+	 * The theme's Global Styles custom CSS, via the non-deprecated API on the
+	 * cores that have it. wp_get_global_styles_custom_css() was deprecated in
+	 * WordPress 6.7 in favour of wp_get_global_stylesheet( array( 'custom-css' ) ).
+	 *
+	 * @return string
+	 */
+	private static function global_custom_css() {
+		if ( function_exists( 'wp_get_global_stylesheet' ) && version_compare( get_bloginfo( 'version' ), '6.7', '>=' ) ) {
+			$css = wp_get_global_stylesheet( array( 'custom-css' ) );
+			return is_string( $css ) ? $css : '';
+		}
+		if ( function_exists( 'wp_get_global_styles_custom_css' ) ) {
+			return wp_get_global_styles_custom_css(); // phpcs:ignore WordPress.WP.DeprecatedFunctions.wp_get_global_styles_custom_cssFound -- only reached on cores older than 6.7, where this function is current.
+		}
+		return '';
 	}
 
 	/**
@@ -333,7 +351,7 @@ class PP_FSE {
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 				'post_status'    => 'publish',
-				'tax_query'      => array(
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- querying block templates by their theme taxonomy; bounded and required for FSE template discovery.
 					array( 'taxonomy' => 'wp_theme', 'field' => 'name', 'terms' => self::theme_slug() ),
 				),
 			)

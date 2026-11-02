@@ -1,0 +1,115 @@
+== Changelog ==
+
+Full version history for PressPilot. The readme.txt keeps only the current release and one
+version back, as the WordPress.org directory recommends; everything else lives here.
+
+= 3.1.2 =
+* The most powerful capabilities now have a dedicated, time-limited control. Running PHP (`/exec`), installing plugins, raw SQL `SELECT` and admin-ajax dispatch are each a separate red opt-in on the Permissions screen — off by default, and each one auto-disables 30 minutes after it is switched on. Their tool descriptions say the same, and the endpoints refuse the call while the toggle is off.
+
+= 3.0.1 =
+* Prepared for the WordPress.org plugin directory: the GitHub self-updater and the `Update URI` header have been removed (the directory serves updates), and the code was brought in line with the plugin-review coding standards — admin-screen input sanitising, prepared and guarded database access, `wp_delete_file()` in place of `unlink()`, a non-deprecated global-styles call, prefixed global functions and translator comments. No change to the REST/MCP tools.
+
+= 2.5.0 =
+* **Cache plugins are now first-class.** `GET /cache` reports every cache layer in front of the site — WP Rocket, LiteSpeed Cache, WP-Optimize, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Autoptimize, Breeze, SiteGround Optimizer, Hummingbird and Nginx Helper — with its version, what it caches, which purge scopes it supports, and where it keeps its settings. Also reports the persistent object cache, `advanced-cache.php`, `WP_CACHE` and opcache.
+* `POST /cache/purge` clears them all through one call, by `scope`: everything, a single post, or a single URL, optionally flushing the object cache and opcache too. A plugin that cannot do the narrow scope falls back to a full purge and says so with `widened: true`, so "I purged one URL" never quietly means "I cleared the site".
+* **Purges automatically after its own writes.** Editing a page and then fetching the URL to check the result used to return whatever the cache had from before the edit — a failure that looks exactly like a write that did not take. PressPilot now clears the cache once at the end of any of its own requests that changed something: once per request, not once per write, so a twenty-page batch triggers one purge. Switch it off with `POST /cache/auto-purge {"enabled": false}`.
+* Every plugin is probed before it is called, so one that is absent — or whose API moved between versions — is skipped rather than throwing. Cache-plugin settings are deliberately read through `/options` (which snapshots and can roll back) instead of being written blind from here; `GET /cache` tells you which option each plugin uses.
+* New `cache` scope, on by default like the others, so existing keys keep working.
+
+= 2.4.0 =
+* **Updates from GitHub, in the normal WordPress places.** PressPilot now reports new releases on Dashboard > Updates and the Plugins screen, "View version details" shows the release notes, and per-plugin auto-updates can be switched on. It hangs off the `Update URI` header, so WordPress asks GitHub instead of the wordpress.org directory — an unrelated plugin sharing the slug there can never be pushed over this install. Adds a "Check for updates" link on the Plugins screen for an immediate check.
+* **Fix: block markup lost a level of backslashes on the way into the database.** `wp_insert_post()` and `wp_update_post()` expect slashed data and unslash whatever they are given, so the escapes WordPress writes inside a block comment — `--` for `--`, and the same for `<`, `>`, `&`, `"` — were stored with the backslash gone. A class like `is-section--dark` landed as `is-sectionu002du002ddark`: it rendered correctly, but opening the page in the block editor showed the mangled class, and saving from there dropped the styling. The same applied to any JS, JSON or regex written through the API. Content is now slashed on the way in, so what you send is what is stored.
+
+= 2.3.0 =
+* **Work on the subscription you already have — no API key.** The Agents screen now carries a verified, copy-paste setup for every subscription client: **Claude Code** (CLI and the VS Code / JetBrains extensions), **Claude Desktop / claude.ai** (custom connectors), **OpenAI Codex** (CLI and IDE), **ChatGPT** (Developer-mode connectors), **VS Code + GitHub Copilot**, and Cursor / Windsurf. Each runs on its own plan — Claude Pro/Max, ChatGPT Plus/Pro, Copilot — and the plugin never sees a model API key.
+* Fix: the VS Code snippet was in the wrong format. VS Code reads `servers` (not `mcpServers`) and requires `"type": "http"`; it now also uses VS Code's `inputs` mechanism so the key is prompted for once and stored securely instead of living in the file. Each client's format was checked against its own documentation — they are not interchangeable.
+* Claude Code now also gets the shareable `.mcp.json` form with `${PRESSPILOT_KEY}` expansion, so a team can commit the file without the secret.
+* Clients that can only take a bare URL (Claude Desktop, ChatGPT) are flagged on the screen when "Key in the URL" is off, instead of silently handing out a URL that will not authenticate.
+* The Connect screen now explains the two paths side by side: **your agent connects to the site** (MCP, subscription, no key) versus **the site calls a model itself** (built-in Copilot, API key needed — a subscription login lives on your computer and cannot be borrowed by a server). The Copilot screen says the same and points to the no-key path.
+
+= 2.2.2 =
+* Fix: the Copilot screen now notices when the plugin has been updated underneath it. Its behaviour ships inside the page it was served with, so a screen left open across an update kept running the old code — which looks exactly like a fix that did not work. It now checks the running version and says plainly that a reload is needed.
+
+= 2.2.1 =
+* Fix: the copilot chat showed raw markup. Models do not agree on a format — some answer in Markdown (`**bold**`), some in HTML, some mix the two — and the chat rendered every reply as plain text, so the markup itself was visible. Replies now go through one pipeline that converts Markdown, passes model-written HTML through, and filters the result against a strict allowlist (no script, no styles, no attributes beyond a validated `href`). Anything unrecognised is unwrapped to its text, so a stray tag reads as words rather than executing.
+* Fix: reasoning models (Kimi, DeepSeek and friends) emit their chain of thought inline as `<think>…</think>` in the normal content field. That is not an answer and is now stripped server-side, so headless callers of `/agent/run` get clean text too. Unclosed and orphaned tags are handled. The assistant turn echoed back into the conversation is left verbatim.
+* Chat code blocks and inline code stay left-to-right on an RTL dashboard.
+
+= 2.2.0 =
+* **New copilot provider: Dahl Inference** (`inference.dahl.global`) — open models (MiniMax M2.7, Kimi K2.6, DeepSeek V4 Flash) served over a decentralised GPU network at a fraction of the usual price, with the first 100M tokens free. OpenAI-compatible, so it plugs into the existing wire layer; pick it on the Copilot screen and *Load available models* lists what it currently serves. Model ids are namespaced, e.g. `MiniMaxAI/MiniMax-M2.7`.
+
+= 2.1.1 =
+* Fix: copilot errors were invisible behind a CDN. Provider failures returned HTTP 502, and Cloudflare (by default) replaces a 5xx from the origin with its own generic error page — so the plugin's actual diagnostic never reached the user, who just saw "error code: 502". Upstream failures now return **424 Failed Dependency**, a 4xx that proxies pass through untouched.
+* Fix: a provider base URL saved as the bare origin (e.g. `https://agentrouter.org` instead of `https://agentrouter.org/v1`) silently sent every call to the vendor's marketing site, which answers 200 with HTML. Known providers are now normalised back to their documented API base; a path you chose yourself, and the `custom` provider, are left alone.
+* The "not JSON" error now names the URL it called and points at the missing `/v1`.
+
+= 2.1.0 =
+* **The dashboard is now multilingual** — every screen is fully translatable, and the plugin ships with **Persian (fa_IR)**, **Arabic (ar)** and **German (de_DE)** alongside English. 169 strings, no gaps.
+* **Right-to-left support is automatic.** The language comes from WordPress alone (Settings → Site Language, or the per-user language on a profile) and RTL follows the locale's own direction. The plugin adds **no rewrite rules, no query parameters and no URL segments** — translating it changes nothing about this site's addresses.
+* The admin stylesheet is written with CSS logical properties, so every screen mirrors correctly on an RTL locale with no separate RTL stylesheet to load. API keys, endpoint URLs, curl lines, TOML and JSON snippets are pinned left-to-right so they stay readable and copyable in an RTL dashboard, and chat messages use `unicode-bidi: plaintext` so each message picks up its own direction.
+* What a *model* reads stays English on every locale by design — the agent prompt, the MCP `instructions`, and tool descriptions. They pair with an English operating manual, and mixing languages in an LLM's context makes its output worse.
+* Capability descriptions, provider notes and MCP client hints are translated; capability keys and vendor names are not (they are wire identifiers and brands).
+
+= 2.0.1 =
+* Compatibility verified end to end (activation, MCP handshake, tools/list, a real block-content write through tools/call, and the full copilot loop) on **WordPress 5.8, 6.9.5 and 7.1** across **PHP 7.4, 8.2 and 8.4** — no notices, warnings or deprecations on any combination. Syntax additionally checked on PHP 8.0 and 8.3.
+* `Tested up to` raised to 7.1 (previously 7.0), now actually exercised rather than assumed.
+* Fix: `GET /agent/models` reported "the provider returned HTTP 200" when a 2xx response body was not JSON — it now says the base URL is likely pointing at a web page rather than an API root.
+* Fix: the MCP authentication-failure path read the error status without checking its shape; hardened so the failure path cannot itself raise a warning.
+* Remove dead code in the `/agent/config` write handler.
+
+= 2.0.0 =
+* **MCP server** — `POST /mcp`, a Model Context Protocol endpoint over Streamable HTTP (JSON-RPC 2.0). Connect Claude Code, OpenAI Codex, Cursor or any MCP client directly; the site shows up as native tools.
+  * Dual-era on one endpoint: the legacy `initialize` handshake (2024-11-05 … 2025-11-25) **and** the modern stateless `server/discover` shape (2026-07-28), with spec-correct version negotiation (`-32022`) and header/body validation (`-32020`).
+  * Tools, resources (`presspilot://skill`, `presspilot://site`, `presspilot://openapi`) and prompts (`build_site`, `migrate_to_gutenberg`, `configure_plugin`, `audit_site`).
+  * The agent Skill is delivered on connect as MCP `instructions`, so agents follow the site's build rules from their first message.
+* **Built-in copilot** — connect Anthropic, OpenAI, OpenRouter, AgentRouter or any OpenAI-compatible endpoint and chat with your site from wp-admin. `GET /agent/models` pulls the live model list from the provider; `POST /agent/step` runs one round trip (the browser drives the loop, so no request can hit max_execution_time) and `POST /agent/run` runs the whole loop server-side for headless callers.
+* **One tool registry** behind both surfaces (`GET /tools`, `POST /tools/call`) — every tool is a thin wrapper over an existing REST route, dispatched internally, so handlers, validation and capability scopes stay the single source of truth.
+* **Permissions carry over**: a tool whose capability scope is disabled is omitted from `tools/list` entirely rather than failing at call time. New "Essential/Full" tool-profile setting trims the surface for smaller models.
+* New admin screens: **Agents (MCP)** (endpoint, per-client copy-paste setup, tool inventory) and **Copilot** (provider, model, chat).
+* Optional `?key=` URL auth for clients that cannot send custom headers (off by default).
+
+= 1.9.0 =
+* **Universal reach** — configure virtually any plugin, whatever it stores config in:
+  * Custom DB tables: GET `/db/tables` `/db/describe`, POST `/db/select` (structured or read-only raw SELECT) and `/db/write` (insert/update/delete) with dry-run, affected-row cap, before-image capture, and a core-table guard.
+  * admin-ajax: POST `/admin-ajax` dispatches a `wp_ajax_{action}` handler as admin (for plugins that only save via ajax) and returns the decoded output.
+  * Escape hatch: POST `/exec` runs PHP — **off by default**, enabled only via the `presspilot_allow_exec` option / `PP_ALLOW_EXEC` constant (equal in power to the plugin-install the key already allows).
+* Together with 1.8.0's options/meta/terms/proxy/discovery/adapters, this covers options, meta, terms, custom tables, a plugin's own REST API, admin-ajax, and (opt-in) arbitrary code.
+* Permissions screen: the new `config` scope appears automatically, plus a dedicated (red, off-by-default) **"Allow code execution"** toggle for `/exec`. Full docs: SKILL §12, API.md, and the OpenAPI spec (`/openapi`) now cover every config endpoint.
+
+= 1.8.0 =
+* **Configuration assistant** — PressPilot can now help configure other plugins & the site, not just build content:
+  * Generic state: GET/POST `/options` (read/write any option, by key or prefix), GET/POST `/meta` (post/term/user), POST `/terms` + `/terms/assign`.
+  * Safety: every write auto-creates a restore point; `dry_run` previews the diff; a denylist guards lock-out options; `/config/snapshot`, `/config/diff`, `/config/restore`.
+  * Discovery: `/registered-settings`, `/rest-routes`, and `/discover?slug=` (option keys + registered settings + REST routes for a plugin). Learn any plugin's keys by snapshot → change in wp-admin → diff.
+  * REST passthrough: POST `/proxy` dispatches to any registered REST route (drive a plugin's own API), acting as admin.
+  * Adapters: `/adapters` + `/adapters/{slug}/{action}` — curated, self-describing connectors for plugins that need their own PHP API (ships a Polylang adapter: add_language, set_post_language, link_translations).
+  * New `config` scope on the Permissions screen gates all of the above.
+
+= 1.7.1 =
+* Content: POST/PUT /content now accepts `parent` (post ID) to build page hierarchy — enables nested URLs like /fa/faq/ for language subdirectories. GET responses now include `parent`.
+
+= 1.7.0 =
+* Assets: POST /assets/upload — host fonts/CSS/SVG as real cacheable files (base64 → uploads), so huge base64 blobs no longer bloat inline CSS.
+* Performance: GET /performance — one-call speed diagnostics (TTFB, page weight, inline CSS/base64, opcache, object cache, page cache, gzip, autoloaded-option bloat) with prioritized recommendations.
+* Serializer: the structured blocks API can now wrap children in a real container element (innerContentOpen/innerContentClose) — build core/group, columns, cover natively.
+* FSE writes now flush the block-template cache; /settings/custom-css can target a non-active theme.
+* Native forms: POST /forms/submit (public, honeypot + min-time + per-IP rate limit) + /forms/config — dependency-free contact forms via wp_mail.
+* Batch: POST /batch runs up to 25 sub-requests in one call. Cleanup: POST /cleanup/elementor-meta purges lingering _elementor_* meta.
+* Security: master API on/off switch and an optional IP/CIDR allow-list, both on the Permissions screen.
+
+= 1.6.0 =
+* Gutenberg: write pages/posts with native blocks via a structured `blocks` tree or raw block markup; trusted (KSES-free) content writes so `<style>`/SVG survive.
+* In-place Elementor → Gutenberg migration: `builder:"gutenberg"` / `clear_elementor:true` on POST/PUT /content.
+* Block-theme (FSE) endpoints: `/fse-templates`, `/fse-template-parts`, `/global-styles`, `/settings/custom-css`.
+* Menu management: create/update/delete menus, nested items, theme-location assignment.
+* Plugin management: list, install (repo slug or base64 zip), activate/deactivate/delete.
+* Block & pattern discovery (`/blocks`, `/patterns`) and reusable-pattern registration.
+* Permissions screen: per-capability scopes gating the API (default all enabled); `/scopes` endpoint.
+* Admin UI polish (native WP admin cards) and a Gutenberg-aware agent prompt.
+
+= 1.1.0 =
+* Add theme management endpoints (list, install from wordpress.org, activate).
+* Add static front-page (homepage) get/set endpoints.
+
+= 1.0.0 =
+* Initial release.
