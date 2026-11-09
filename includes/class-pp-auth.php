@@ -16,8 +16,12 @@ class PP_Auth {
 	const OPTION_SCOPES      = 'presspilot_scopes';       // which capability groups the API key may use
 	const OPTION_ENABLED     = 'presspilot_api_enabled';  // master on/off switch (default on)
 	const OPTION_ALLOWED_IPS = 'presspilot_allowed_ips';  // optional IP/CIDR allow-list (empty = allow all)
+	const OPTION_TOKENS      = 'presspilot_tokens';       // additional named tokens (multi-token support)
 	const LEGACY_OPTION_KEY  = 'eaia_api_key';            // pre-rename option (migrated on load)
 	const LEGACY_HEADER      = 'x_eaia_key';               // pre-rename header (still accepted)
+
+	/** Only update a token's last-used stamp at most once per this many seconds. */
+	const LAST_USED_THROTTLE = 60;
 
 	/**
 	 * Capability groups the admin can toggle on the settings screen. Each REST
@@ -198,27 +202,87 @@ class PP_Auth {
 			return true;
 		}
 
-		$stored    = self::get_key();
 		$presented = self::presented_key( $request );
-
-		if ( empty( $stored ) ) {
-			return PP_Helpers::error( 'pp_no_key', 'No API key is configured on the site.', 500 );
-		}
-		if ( empty( $presented ) || ! hash_equals( $stored, $presented ) ) {
+		if ( empty( $presented ) ) {
 			return PP_Helpers::error( 'pp_forbidden', 'Invalid or missing API key.', 401 );
 		}
-		// Optional IP allow-list (empty = allow all).
-		if ( ! self::ip_allowed( self::client_ip() ) ) {
+
+		// Match the presented key against the primary key and every active token,
+		// in constant time (every candidate is compared, no early return).
+		$match = self::match_credential( $presented );
+		if ( null === $match ) {
+			return PP_Helpers::error( 'pp_forbidden', 'Invalid or missing API key.', 401 );
+		}
+
+		// IP allow-list: a token may carry its own; otherwise the global one applies.
+		$ip_list = ( isset( $match['ips'] ) && '' !== $match['ips'] ) ? $match['ips'] : self::get_allowed_ips();
+		if ( ! self::ip_allowed_against( self::client_ip(), $ip_list ) ) {
 			return PP_Helpers::error( 'pp_ip_blocked', 'Your IP address is not allowed to use this API.', 403 );
 		}
-		if ( '' !== $scope && ! self::scope_allowed( $scope ) ) {
-			return PP_Helpers::error(
-				'pp_scope_disabled',
-				sprintf( 'The "%s" capability is turned off for the API on this site. Enable it on the PressPilot settings screen.', $scope ),
-				403
-			);
+
+		// Scope: the capability must be on globally AND granted to this token.
+		if ( '' !== $scope ) {
+			if ( ! self::scope_allowed( $scope ) ) {
+				return PP_Helpers::error(
+					'pp_scope_disabled',
+					sprintf( 'The "%s" capability is turned off for the API on this site. Enable it on the PressPilot settings screen.', $scope ),
+					403
+				);
+			}
+			if ( is_array( $match['scopes'] ) && ! in_array( $scope, $match['scopes'], true ) ) {
+				return PP_Helpers::error(
+					'pp_token_scope',
+					sprintf( 'This token is not permitted to use the "%s" capability.', $scope ),
+					403
+				);
+			}
+		}
+
+		// Record use (throttled) so the admin can see which tokens are live.
+		if ( ! empty( $match['id'] ) && 'primary' !== $match['id'] ) {
+			self::touch_token( $match['id'] );
 		}
 		return true;
+	}
+
+	/**
+	 * Find the credential whose secret matches the presented key, comparing every
+	 * candidate (constant-time: no short-circuit reveals which one matched).
+	 *
+	 * Candidates: the primary key (full access, id "primary") plus every enabled
+	 * named token. A disabled or revoked token never matches.
+	 *
+	 * @param string $presented Presented key.
+	 * @return array|null The matched credential record, or null.
+	 */
+	private static function match_credential( $presented ) {
+		$match = null;
+		foreach ( self::credentials() as $cred ) {
+			if ( '' !== (string) $cred['token'] && hash_equals( (string) $cred['token'], $presented ) ) {
+				$match = $cred;
+			}
+		}
+		return $match;
+	}
+
+	/**
+	 * All credentials that may authenticate: the primary key as a synthetic record
+	 * with full access, then every enabled named token.
+	 *
+	 * @return array[]
+	 */
+	private static function credentials() {
+		$creds = array();
+		$primary = self::get_key();
+		if ( '' !== $primary ) {
+			$creds[] = array( 'id' => 'primary', 'label' => 'Primary key', 'token' => $primary, 'scopes' => null, 'ips' => '' );
+		}
+		foreach ( self::get_tokens() as $tok ) {
+			if ( ! empty( $tok['enabled'] ) ) {
+				$creds[] = $tok;
+			}
+		}
+		return $creds;
 	}
 
 	/**
@@ -275,18 +339,7 @@ class PP_Auth {
 
 	/** Save the allow-list (sanitized: keep IPs, CIDRs; drop junk). */
 	public static function save_allowed_ips( $raw ) {
-		$out = array();
-		foreach ( preg_split( '/[\r\n,]+/', (string) $raw ) as $line ) {
-			$line = trim( $line );
-			if ( '' === $line ) {
-				continue;
-			}
-			$ip = explode( '/', $line )[0];
-			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-				$out[] = $line;
-			}
-		}
-		$val = implode( "\n", array_unique( $out ) );
+		$val = self::normalize_ips( $raw );
 		update_option( self::OPTION_ALLOWED_IPS, $val, false );
 		return $val;
 	}
@@ -304,7 +357,18 @@ class PP_Auth {
 	 * @return bool
 	 */
 	public static function ip_allowed( $ip ) {
-		$list = trim( self::get_allowed_ips() );
+		return self::ip_allowed_against( $ip, self::get_allowed_ips() );
+	}
+
+	/**
+	 * Is $ip allowed by a specific allow-list string (empty = no restriction)?
+	 *
+	 * @param string $ip   Client IP.
+	 * @param string $list Raw allow-list (IPs/CIDRs, any whitespace/newline/comma separated).
+	 * @return bool
+	 */
+	public static function ip_allowed_against( $ip, $list ) {
+		$list = trim( (string) $list );
 		if ( '' === $list ) {
 			return true; // no restriction configured.
 		}
@@ -359,5 +423,162 @@ class PP_Auth {
 		}
 		update_option( self::OPTION_SCOPES, $map, false );
 		return $map;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Multiple named tokens                                              */
+	/*                                                                    */
+	/* Each token is a separate credential with its own label, optional   */
+	/* capability subset (least privilege), optional IP allow-list, and   */
+	/* on/off state. The primary key keeps full access. Tokens are        */
+	/* managed only from wp-admin (manage_options) — never through the    */
+	/* API itself, so a key can never mint or widen another key.          */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * All named tokens, normalised. Keyed by token id.
+	 *
+	 * @return array<string,array>
+	 */
+	public static function get_tokens() {
+		$raw = get_option( self::OPTION_TOKENS, array() );
+		$out = array();
+		if ( is_array( $raw ) ) {
+			foreach ( $raw as $rec ) {
+				$rec = self::normalize_token( $rec );
+				if ( $rec ) {
+					$out[ $rec['id'] ] = $rec;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/** Coerce a stored record into the canonical token shape (or null if unusable). */
+	private static function normalize_token( $rec ) {
+		if ( ! is_array( $rec ) || empty( $rec['id'] ) || empty( $rec['token'] ) ) {
+			return null;
+		}
+		$scopes = null;
+		if ( isset( $rec['scopes'] ) && is_array( $rec['scopes'] ) ) {
+			// Keep only known scope keys; an empty array means "no capabilities".
+			$scopes = array_values( array_intersect( array_map( 'sanitize_key', $rec['scopes'] ), array_keys( self::SCOPES ) ) );
+		}
+		return array(
+			'id'        => (string) $rec['id'],
+			'label'     => isset( $rec['label'] ) ? (string) $rec['label'] : '',
+			'token'     => (string) $rec['token'],
+			'scopes'    => $scopes, // null = inherit all currently-granted global scopes.
+			'ips'       => isset( $rec['ips'] ) ? (string) $rec['ips'] : '',
+			'enabled'   => ! isset( $rec['enabled'] ) || (bool) $rec['enabled'],
+			'created'   => isset( $rec['created'] ) ? (string) $rec['created'] : '',
+			'last_used' => isset( $rec['last_used'] ) ? (string) $rec['last_used'] : '',
+		);
+	}
+
+	/** Persist the token map. */
+	private static function save_tokens( $tokens ) {
+		update_option( self::OPTION_TOKENS, array_values( $tokens ), false );
+	}
+
+	/**
+	 * Create a new named token.
+	 *
+	 * @param string     $label  Human label.
+	 * @param array|null $scopes Capability subset (null = inherit all granted scopes).
+	 * @param string     $ips    Optional per-token IP/CIDR allow-list (raw).
+	 * @return array The new token record (includes the full secret — show it once).
+	 */
+	public static function create_token( $label, $scopes = null, $ips = '' ) {
+		$tokens = self::get_tokens();
+		$rec    = self::normalize_token( array(
+			'id'      => 'tok_' . wp_generate_password( 12, false, false ),
+			'label'   => sanitize_text_field( $label ),
+			'token'   => 'pp_' . wp_generate_password( 40, false, false ),
+			'scopes'  => is_array( $scopes ) ? $scopes : null,
+			'ips'     => self::normalize_ips( $ips ),
+			'enabled' => true,
+			'created' => current_time( 'mysql' ),
+		) );
+		$tokens[ $rec['id'] ] = $rec;
+		self::save_tokens( $tokens );
+		return $rec;
+	}
+
+	/**
+	 * Update a token's label, scopes, IPs or enabled state.
+	 *
+	 * @param string $id     Token id.
+	 * @param array  $fields { label, scopes(array|null), ips, enabled }.
+	 * @return array|null The updated record, or null if not found.
+	 */
+	public static function update_token( $id, $fields ) {
+		$tokens = self::get_tokens();
+		if ( empty( $tokens[ $id ] ) ) {
+			return null;
+		}
+		$rec = $tokens[ $id ];
+		if ( array_key_exists( 'label', $fields ) ) {
+			$rec['label'] = sanitize_text_field( $fields['label'] );
+		}
+		if ( array_key_exists( 'scopes', $fields ) ) {
+			$rec['scopes'] = is_array( $fields['scopes'] ) ? $fields['scopes'] : null;
+		}
+		if ( array_key_exists( 'ips', $fields ) ) {
+			$rec['ips'] = self::normalize_ips( $fields['ips'] );
+		}
+		if ( array_key_exists( 'enabled', $fields ) ) {
+			$rec['enabled'] = (bool) $fields['enabled'];
+		}
+		$rec            = self::normalize_token( $rec );
+		$tokens[ $id ]  = $rec;
+		self::save_tokens( $tokens );
+		return $rec;
+	}
+
+	/** Enable or disable a token. */
+	public static function set_token_enabled( $id, $on ) {
+		return self::update_token( $id, array( 'enabled' => (bool) $on ) );
+	}
+
+	/** Permanently revoke (delete) a token. */
+	public static function revoke_token( $id ) {
+		$tokens = self::get_tokens();
+		if ( empty( $tokens[ $id ] ) ) {
+			return false;
+		}
+		unset( $tokens[ $id ] );
+		self::save_tokens( $tokens );
+		return true;
+	}
+
+	/** Record a token's last use, at most once per LAST_USED_THROTTLE seconds. */
+	private static function touch_token( $id ) {
+		$tokens = self::get_tokens();
+		if ( empty( $tokens[ $id ] ) ) {
+			return;
+		}
+		$last = $tokens[ $id ]['last_used'];
+		if ( $last && ( time() - strtotime( $last ) ) < self::LAST_USED_THROTTLE ) {
+			return;
+		}
+		$tokens[ $id ]['last_used'] = current_time( 'mysql' );
+		self::save_tokens( $tokens );
+	}
+
+	/** Normalise a raw IP/CIDR allow-list to one entry per line, junk dropped. */
+	public static function normalize_ips( $raw ) {
+		$out = array();
+		foreach ( preg_split( '/[\r\n,\s]+/', (string) $raw ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line ) {
+				continue;
+			}
+			$ip = explode( '/', $line )[0];
+			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+				$out[] = $line;
+			}
+		}
+		return implode( "\n", array_unique( $out ) );
 	}
 }

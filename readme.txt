@@ -47,6 +47,7 @@ Features:
 * Read-only file access under allow-listed roots (debug log, theme/plugin source) for debugging and review.
 * Discover the block/widget vocabulary and register reusable patterns.
 * **Permissions**: per-capability toggles in the admin (default: everything on) so you control exactly what the API may touch.
+* **Multiple API tokens**: issue a separate token per agent, client or teammate — each with its own capability subset (least privilege), optional per-token IP allow-list, and an on/off switch. Revoke one without touching the others; each token's last-used time is shown.
 * API-key authentication with constant-time comparison and one-click key regeneration.
 * Safety controls: master API on/off switch and an optional IP/CIDR allow-list.
 
@@ -71,7 +72,9 @@ Re-save Permalinks (Settings > Permalinks > Save). Or use the fallback form `/?r
 Every endpoint — MCP included — requires the secret API key, compared in constant time. Keep it
 private and serve your site over HTTPS; you can regenerate it at any time. The Permissions screen
 adds a master on/off switch, an optional IP/CIDR allow-list, and per-capability toggles: a
-capability you turn off is not just refused, its tools are hidden from the agent entirely. Every
+capability you turn off is not just refused, its tools are hidden from the agent entirely. You can
+also issue a separate token per agent with only the capabilities it needs and revoke it on its own.
+Every
 operation is a specific, predefined, validated action with its own capability check — there is no
 arbitrary code execution, no arbitrary SQL and no arbitrary file writing. Reads are read-only;
 configuration writes create a restore point you can roll back; and the hardening actions are
@@ -114,6 +117,7 @@ own machine or in your own client, not by this plugin.
 = 4.0.0 =
 * **Rebuilt around a fixed set of vetted, predefined operations.** Arbitrary PHP execution (`/exec`), raw SQL, arbitrary database writes, admin-ajax dispatch and the generic REST proxy have been **removed**. In their place: a structured, read-only database query (`/db/query`), read-only file access under allow-listed roots (`/files/list`, `/files/read`), and a security & maintenance engine (`/security/scan`, `/security/actions`, `/security/apply`) with read-only scans and a reversible hardening/cleanup catalogue. Installing a plugin is now by WordPress.org slug only — never an uploaded zip.
 * New capability scopes split the old catch-all `config` into `database`, `files`, `security`, `discovery` and `adapters`, each independently toggleable.
+* **Multiple named API tokens** alongside the primary key, each with its own capability subset, optional IP allow-list and on/off switch, managed from the Permissions screen. Tokens are managed only in wp-admin, never through the API.
 * This is a breaking change: agents that relied on `/exec`, `/proxy`, `/db/write`, raw `/db/select` or `/admin-ajax` should use the typed operations, a structured `/db/query`, a curated adapter, or the new security engine instead.
 
 = 3.1.2 =
