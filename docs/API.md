@@ -178,28 +178,44 @@ Discovery routes (`/ping`, `/site`, `/scopes`, `/migration-status`, `/globals`, 
 | GET | `/homepage` | Front-page config. |
 | POST | `/homepage` | Set a static front page. Body: `page_id` (required), `posts_page_id` (optional). |
 
-## Configuration assistant (scope `config`)
-Read & change plugin/site configuration — reaches wherever a plugin stores its config.
-Recommended order: **adapter → `/proxy` → `/options`/`/meta`/`/terms` → `/db/*` → `/admin-ajax` → `/exec`**. Always `dry_run` writes first.
+## Configuration assistant (scopes `config` / `discovery` / `adapters`)
+Read & change plugin/site configuration through vetted, validated operations.
+Recommended order: **a curated adapter → `/options`/`/meta`/`/terms` → the read-only `/db/*` and `/files/*` tools to inspect**. Always `dry_run` writes first; every option write returns a `restore_id`.
+
+| Method | Path | Scope | Purpose |
+|---|---|---|---|
+| GET | `/options` | config | Read options by `keys` (csv) and/or `prefix`. Secrets redacted unless `reveal=1`. |
+| POST | `/options` | config | Write `options` {name:value}. `dry_run` previews the diff; auto-creates a restore point (`restore_id`); lock-out options need `force`. |
+| GET/POST | `/meta` | config | Read/write post/term/user meta. Body: `type`, `id`, `meta`, `dry_run`. |
+| POST | `/terms` · `/terms/assign` | config | Create a term (`taxonomy`, `name`, `slug`, `parent`, `meta`) / assign terms to an `object_id`. |
+| POST | `/config/snapshot` · GET `/config/snapshot` | config | Capture options (`keys`/`prefix`, or all autoloaded) / list snapshots. |
+| GET | `/config/diff?id=` | config | What changed since a snapshot (added/changed/removed). |
+| POST | `/config/restore` | config | Roll options back to a snapshot (`id`, optional `keys`). |
+| GET | `/registered-settings` · `/rest-routes?prefix=` | discovery | Enumerate Settings-API settings / all REST routes. |
+| GET | `/discover?slug=` (or `prefix=`) | discovery | A plugin's option keys + registered settings + REST routes. |
+| GET | `/adapters` · POST `/adapters/{slug}/{action}` | adapters | Curated plugin connectors (ships Polylang: `add_language`, `set_post_language`, `link_translations`). A vetted menu of actions, never arbitrary code. |
+
+## Database (read-only, scope `database`)
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/options` | Read options by `keys` (csv) and/or `prefix`. Secrets redacted unless `reveal=1`. |
-| POST | `/options` | Write `options` {name:value}. `dry_run` previews the diff; auto-creates a restore point (`restore_id`); lock-out options need `force`. |
-| GET/POST | `/meta` | Read/write post/term/user meta. Body: `type`, `id`, `meta`, `dry_run`. |
-| POST | `/terms` · `/terms/assign` | Create a term (`taxonomy`, `name`, `slug`, `parent`, `meta`) / assign terms to an `object_id`. |
-| POST | `/config/snapshot` · GET `/config/snapshot` | Capture options (`keys`/`prefix`, or all autoloaded) / list snapshots. |
-| GET | `/config/diff?id=` | What changed since a snapshot (added/changed/removed). |
-| POST | `/config/restore` | Roll options back to a snapshot (`id`, optional `keys`). |
-| GET | `/registered-settings` · `/rest-routes?prefix=` | Enumerate Settings-API settings / all REST routes. |
-| GET | `/discover?slug=` (or `prefix=`) | A plugin's option keys + registered settings + REST routes. |
-| POST | `/proxy` | Dispatch to any REST route as admin. Body: `method`, `path`, `body`, `query`. Returns `{status,data}`. |
-| GET | `/adapters` · POST `/adapters/{slug}/{action}` | Curated plugin connectors (ships Polylang: `add_language`, `set_post_language`, `link_translations`). |
 | GET | `/db/tables?prefix=` · `/db/describe?table=` | List custom tables (+ row counts) / show columns. |
-| POST | `/db/select` | Read rows: `{table, where, columns, order, dir, limit}` or `{raw:"SELECT …"}` (single read-only statement). |
-| POST | `/db/write` | `{op:insert\|update\|delete, table, data, where, dry_run, force}`. Update/delete require `where`; rows capped; before-image returned; core tables need `force`. |
-| POST | `/admin-ajax` | Dispatch `wp_ajax_{action}` as admin. Body: `action`, `args`, `nopriv`. |
-| POST | `/exec` | Run PHP (`code`). **Off by default** — enable on the Permissions screen (`presspilot_allow_exec`) or the `PP_ALLOW_EXEC` constant. |
+| POST | `/db/query` | Structured, read-only query: `{table, where:{col:val}, columns, order, dir, limit}`. Built from validated identifiers with bound values — no raw SQL, no writes, rows capped at 500. |
+
+## Files (read-only, scope `files`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/files/list` | List a directory: `{root, path, glob}`. `root` ∈ uploads \| content \| themes \| plugins \| site. |
+| GET | `/files/read` | Read a text file: `{root, path}`. Size-capped; `wp-config.php` and secrets are refused. |
+
+## Security & maintenance (scope `security`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/security/scan` | Read-only scans: `{checks:[files,config,accounts,plugins]}` (omit for all). Changes nothing. |
+| GET | `/security/actions` | The vetted catalogue of hardening toggles (reversible) and maintenance cleaners, with current state. |
+| POST | `/security/apply` | Apply one action: `{action, dry_run, undo}`. Hardening toggles reverse with `undo:true`; deletion cleaners are not reversible. |
 
 ---
 

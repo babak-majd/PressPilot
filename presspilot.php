@@ -3,7 +3,7 @@
  * Plugin Name:       PressPilot
  * Plugin URI:        https://github.com/babak-majd/PressPilot
  * Description:        An AI copilot for WordPress. Connect Claude Code, OpenAI Codex, OpenRouter or AgentRouter straight to your site over MCP — or use the built-in copilot — and let an agent build and manage everything: pages, posts, blocks, themes, menus, templates, media, settings and plugin configuration.
- * Version:           3.1.2
+ * Version:           4.0.0
  * Author:            Baabak Majd
  * Author URI:        https://bobclub.ir
  * Text Domain:       presspilot
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PP_VERSION', '3.1.2' );
+define( 'PP_VERSION', '4.0.0' );
 define( 'PP_PRODUCT', 'PressPilot' );
 define( 'PP_TAGLINE', 'AI copilot for WordPress' );
 define( 'PP_FILE', __FILE__ );
@@ -27,7 +27,6 @@ define( 'PP_URL', plugin_dir_url( __FILE__ ) );
 define( 'PP_REST_NS', 'presspilot/v1' );
 
 require_once PP_PATH . 'includes/class-pp-helpers.php';
-require_once PP_PATH . 'includes/class-pp-danger.php';
 require_once PP_PATH . 'includes/class-pp-auth.php';
 require_once PP_PATH . 'includes/class-pp-elementor.php';
 require_once PP_PATH . 'includes/class-pp-gutenberg.php';
@@ -40,6 +39,8 @@ require_once PP_PATH . 'includes/class-pp-perf.php';
 require_once PP_PATH . 'includes/class-pp-forms.php';
 require_once PP_PATH . 'includes/class-pp-config.php';
 require_once PP_PATH . 'includes/class-pp-db.php';
+require_once PP_PATH . 'includes/class-pp-files.php';
+require_once PP_PATH . 'includes/class-pp-security.php';
 require_once PP_PATH . 'includes/class-pp-adapters.php';
 require_once PP_PATH . 'includes/class-pp-tools.php';
 require_once PP_PATH . 'includes/class-pp-mcp.php';
@@ -48,12 +49,6 @@ require_once PP_PATH . 'includes/class-pp-agent.php';
 require_once PP_PATH . 'includes/class-pp-rest.php';
 require_once PP_PATH . 'includes/class-pp-admin.php';
 require_once PP_PATH . 'includes/class-pp-cache.php';
-
-// The /exec code-execution escape hatch (PP_Exec) ships only in the full build,
-// never on WordPress.org where eval() is not permitted. Load it when present.
-if ( file_exists( PP_PATH . 'includes/class-pp-exec.php' ) ) {
-	require_once PP_PATH . 'includes/class-pp-exec.php';
-}
 
 /**
  * On activation: make sure an API key exists so the user can copy it immediately.
@@ -90,6 +85,8 @@ add_action( 'init', 'presspilot_load_textdomain' );
 function presspilot_boot() {
 	PP_Auth::instance();
 	PP_REST::instance();
+	// Apply any runtime security hardening the admin has turned on.
+	PP_Security::enforce();
 	// Clears the page cache after our own writes, so the URL an agent fetches
 	// back is the page it just wrote rather than whatever was cached.
 	PP_Cache::init();

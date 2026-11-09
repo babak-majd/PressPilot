@@ -3,6 +3,11 @@
 Full version history for PressPilot. The readme.txt keeps only the current release and one
 version back, as the WordPress.org directory recommends; everything else lives here.
 
+= 4.0.0 =
+* Rebuilt around a fixed set of vetted, predefined operations. Arbitrary PHP execution (`/exec`), raw SQL, arbitrary database writes, admin-ajax dispatch and the generic REST proxy have been removed. In their place: a structured, read-only database query (`/db/query`), read-only file access under allow-listed roots (`/files/list`, `/files/read`), and a security & maintenance engine (`/security/scan`, `/security/actions`, `/security/apply`) with read-only scans and a reversible hardening/cleanup catalogue. Installing a plugin is now by WordPress.org slug only — never an uploaded zip.
+* New capability scopes split the old catch-all `config` into `database`, `files`, `security`, `discovery` and `adapters`, each independently toggleable.
+* Breaking change: agents that relied on `/exec`, `/proxy`, `/db/write`, raw `/db/select` or `/admin-ajax` should use the typed operations, a structured `/db/query`, a curated adapter, or the new security engine instead.
+
 = 3.1.2 =
 * The most powerful capabilities now have a dedicated, time-limited control. Running PHP (`/exec`), installing plugins, raw SQL `SELECT` and admin-ajax dispatch are each a separate red opt-in on the Permissions screen — off by default, and each one auto-disables 30 minutes after it is switched on. Their tool descriptions say the same, and the endpoints refuse the call while the toggle is off.
 

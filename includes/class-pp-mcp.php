@@ -592,7 +592,7 @@ class PP_MCP {
 				break;
 
 			case 'configure_plugin':
-				$text = $preamble . "Configure the \"" . $arg( 'plugin' ) . "\" plugin on this site.\n\nGoal: " . $arg( 'goal' ) . "\n\nFollow the decision order in the Skill: an adapter if one exists, then the plugin's own REST API through wp_proxy_rest, then options/meta/terms (use wp_config_discover and the snapshot/diff trick to find the exact keys), then the database tools, then admin-ajax. Take a snapshot first, preview every write with dry_run:true and show me the diff before committing, and tell me the restore_id afterwards.";
+				$text = $preamble . "Configure the \"" . $arg( 'plugin' ) . "\" plugin on this site.\n\nGoal: " . $arg( 'goal' ) . "\n\nFollow the decision order in the Skill: a curated adapter if one exists, then options/meta/terms (use wp_config_discover and the snapshot/diff trick to find the exact keys), then the read-only database tools to inspect how it stores data. Take a snapshot first, preview every write with dry_run:true and show me the diff before committing, and tell me the restore_id afterwards.";
 				break;
 
 			case 'audit_site':

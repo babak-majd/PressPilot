@@ -37,9 +37,14 @@ class PP_Auth {
 		'templates' => 'Templates (Elementor Theme Builder, block themes, patterns)',
 		'styles'    => 'Global styles & CSS (Additional CSS, theme.json global styles)',
 		'themes'    => 'Themes (install, activate, switch)',
-		'plugins'   => 'Plugins (install, activate, deactivate, delete)',
+		'plugins'   => 'Plugins (install from the WordPress.org repo, activate, deactivate, delete)',
 		'settings'  => 'Site settings (options, homepage, permalinks)',
-		'config'    => 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)',
+		'config'    => 'Plugin & site configuration (read/write options, meta & terms; snapshots & restore points)',
+		'database'  => 'Database reads (structured, read-only queries of plugin & core tables)',
+		'files'     => 'Files (read-only listing & reading of files under allow-listed roots)',
+		'security'  => 'Security & maintenance (read-only scans; vetted, reversible hardening & optimization)',
+		'discovery' => 'Discovery (enumerate settings, REST routes & a plugin\'s option keys)',
+		'adapters'  => 'Plugin adapters (run a curated, vetted action on a supported plugin)',
 		'cache'     => 'Caching (detect cache plugins, purge caches, automatic purge after writes)',
 	);
 
@@ -58,9 +63,14 @@ class PP_Auth {
 			'templates' => __( 'Templates (Elementor Theme Builder, block themes, patterns)', 'presspilot' ),
 			'styles'    => __( 'Global styles & CSS (Additional CSS, theme.json global styles)', 'presspilot' ),
 			'themes'    => __( 'Themes (install, activate, switch)', 'presspilot' ),
-			'plugins'   => __( 'Plugins (install, activate, deactivate, delete)', 'presspilot' ),
+			'plugins'   => __( 'Plugins (install from the WordPress.org repo, activate, deactivate, delete)', 'presspilot' ),
 			'settings'  => __( 'Site settings (options, homepage, permalinks)', 'presspilot' ),
-			'config'    => __( 'Plugin & site configuration (read/write any option, meta & terms; snapshots/restore; discovery; REST proxy; plugin adapters)', 'presspilot' ),
+			'config'    => __( 'Plugin & site configuration (read/write options, meta & terms; snapshots & restore points)', 'presspilot' ),
+			'database'  => __( 'Database reads (structured, read-only queries of plugin & core tables)', 'presspilot' ),
+			'files'     => __( 'Files (read-only listing & reading of files under allow-listed roots)', 'presspilot' ),
+			'security'  => __( 'Security & maintenance (read-only scans; vetted, reversible hardening & optimization)', 'presspilot' ),
+			'discovery' => __( 'Discovery (enumerate settings, REST routes & a plugin\'s option keys)', 'presspilot' ),
+			'adapters'  => __( 'Plugin adapters (run a curated, vetted action on a supported plugin)', 'presspilot' ),
 			'cache'     => __( 'Caching (detect cache plugins, purge caches, automatic purge after writes)', 'presspilot' ),
 		);
 	}
