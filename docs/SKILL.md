@@ -332,12 +332,11 @@ Custom CSS, and turn off Elementor's own Google Fonts with
 | GET/POST | `/meta` | config | read/write post/term/user meta (`type`,`id`,`meta`) |
 | POST | `/terms` · `/terms/assign` | config | create a term (with meta) / assign terms to an object |
 | GET/POST | `/config/snapshot` · GET `/config/diff` · POST `/config/restore` | config | capture options, diff vs now, roll back |
-| GET | `/registered-settings` `/rest-routes` `/discover` | config | learn a plugin's option keys, settings & REST routes |
-| POST | `/proxy` | config | dispatch to any REST route as admin (drive a plugin's own API) |
-| GET | `/adapters` · POST `/adapters/{slug}/{action}` | config | curated plugin connectors (e.g. Polylang add_language) |
-| GET | `/db/tables` `/db/describe` · POST `/db/select` `/db/write` | config | custom plugin tables — read (structured or raw SELECT) / write (dry-run, before-image, core-table guard) |
-| POST | `/admin-ajax` | config | dispatch a `wp_ajax_{action}` handler as admin |
-| POST | `/exec` | config | run PHP (opt-in; `presspilot_allow_exec`) — universal last resort |
+| GET | `/registered-settings` `/rest-routes` `/discover` | discovery | learn a plugin's option keys, settings & REST routes |
+| GET | `/adapters` · POST `/adapters/{slug}/{action}` | adapters | curated plugin connectors (e.g. Polylang add_language) — a vetted menu of actions |
+| GET | `/db/tables` `/db/describe` · POST `/db/query` | database | read-only: list tables, describe, and a structured query (`table`, `where`, `columns`, `order`, `dir`, `limit`) — no raw SQL, no writes |
+| GET | `/files/list` `/files/read` | files | read-only listing & reading of files under allow-listed roots (uploads, content, themes, plugins, site) |
+| POST | `/security/scan` · GET `/security/actions` · POST `/security/apply` | security | read-only scans; a vetted, reversible hardening/maintenance catalogue (`dry_run`, `undo`) |
 | POST | `/mcp` | — | **MCP endpoint** (Streamable HTTP, JSON-RPC 2.0) — the direct agent connection |
 | GET/POST | `/tools` · `/tools/call` | — | the tool registry MCP exposes / run one tool by name |
 | GET/POST | `/agent/config` · GET `/agent/models` · POST `/agent/step` `/agent/run` | — | the built-in copilot: provider config, model list, one round trip, or the whole loop |
@@ -428,11 +427,6 @@ the **`config`** scope.
 Also: `GET/POST /meta { type:post|term|user, id, … }` for metadata; `POST /terms` +
 `POST /terms/assign` for taxonomy terms (e.g. a plugin that stores config as terms).
 
-**Drive a plugin's own REST API** (WooCommerce, Yoast, …) via `POST /proxy
-{ "method":"GET|POST|…", "path":"/wc/v3/settings", "body":{…} }` — it dispatches the request
-internally **as an administrator** and returns `{status, data}`. This is the cleanest path for any
-plugin that exposes REST.
-
 **Plugins that need their own PHP API** (Polylang, WPML, …) have curated, self-describing
 **adapters**: `GET /adapters` lists them and their actions (and whether the plugin is active);
 `POST /adapters/{slug}/{action}` runs a whitelisted action, e.g.
@@ -440,24 +434,20 @@ plugin that exposes REST.
 `…/set_post_language { post_id, lang }`, `…/link_translations { translations:{ en:12, fa:34 } }`.
 Only registered actions run, and only when the plugin is active — never arbitrary code.
 
-**Reaching plugins that store config elsewhere** (so "any plugin" is possible):
+**Inspecting plugins that store config elsewhere** (read-only):
 - **Custom DB tables** — `GET /db/tables?prefix=<wpdb_prefix>` lists tables + row counts; `GET
-  /db/describe?table=` shows columns; `POST /db/select { table, where:{col:val}, columns, order,
-  limit }` (or `{ raw:"SELECT …" }`, single read-only statement) reads; `POST /db/write { op:
-  insert|update|delete, table, data, where, dry_run, force }` writes — dry-run previews, updates/
-  deletes require a `where`, affected rows are capped and returned as a before-image, and core WP
-  tables are refused (use the typed endpoints) unless `force:true`.
-- **admin-ajax handlers** — `POST /admin-ajax { action, args:{…}, nopriv }` dispatches
-  `wp_ajax_{action}` as admin (for plugins that only persist settings through ajax) and returns the
-  decoded output.
-- **Escape hatch** — `POST /exec { "code": "return get_option('x');" }` runs PHP for the rare plugin
-  with no other surface. **Disabled by default**; enable via the `presspilot_allow_exec` option
-  (`POST /options`) or the `PP_ALLOW_EXEC` constant. Prefer the typed layers above; reserve `/exec`
-  for what they can't reach.
+  /db/describe?table=` shows columns; `POST /db/query { table, where:{col:val}, columns, order,
+  dir, limit }` runs a structured, read-only query built from validated identifiers with bound
+  values (no raw SQL, capped rows). To **change** data use the typed endpoints — `/content`,
+  `/options`, `/meta`, `/terms` — each of which validates and (for options) snapshots.
+- **Files** — `GET /files/list { root, path, glob }` and `GET /files/read { root, path }` list and
+  read files under allow-listed roots (`uploads`, `content`, `themes`, `plugins`, `site`) for
+  debugging and review. Read-only; `wp-config.php` and secrets are never returned.
 
-**Decision order for configuring a plugin:** adapter (if one exists) → the plugin's own REST via
-`/proxy` → `/options`/`/meta`/`/terms` (use `/discover` + snapshot/diff to find keys) → `/db/*`
-for custom tables → `/admin-ajax` → `/exec` as the last resort. Always `dry_run` first on writes.
+**Decision order for configuring a plugin:** a curated adapter (if one exists) →
+`/options`/`/meta`/`/terms` (use `/discover` + snapshot/diff to find the exact keys) → the read-only
+`/db/*` and `/files/*` tools to inspect how it stores and renders data. Always `dry_run` first on
+writes; every option write returns a `restore_id` you can roll back.
 
 ## 13. Posts, taxonomies & a dynamic blog
 

@@ -7,8 +7,7 @@
  *   1. State     — read/write options, post/term/user meta, and terms.
  *   2. Discovery — enumerate a plugin's option keys, registered settings and REST routes
  *                  so the agent can learn what to set instead of hard-coding it.
- *   3. Passthrough — dispatch a request to any registered REST route (call a plugin's own API).
- *   4. Safety    — every write auto-creates a restore point; dry-run previews the diff;
+ *   3. Safety    — every write auto-creates a restore point; dry-run previews the diff;
  *                  a denylist guards the options that can lock a site out.
  *
  * @package PressPilot
@@ -392,117 +391,7 @@ class PP_Config {
 			'option_keys'        => array_keys( $opts['options'] ),
 			'registered_settings'=> $matching,
 			'rest_routes'        => $routes['routes'],
-			'hint'               => 'Use POST /options to write settings, or the plugin\'s own REST routes via POST /proxy. Use /config/snapshot + /config/diff to learn keys by observing a change made in wp-admin.',
+			'hint'               => 'Use POST /options or POST /meta to write settings, or a curated plugin adapter under /adapters. Use /config/snapshot + /config/diff to learn keys by observing a change made in wp-admin.',
 		);
-	}
-
-	/* ------------------------------------------------------------------ */
-	/* Layer 3 — REST passthrough                                         */
-	/* ------------------------------------------------------------------ */
-
-	/**
-	 * Dispatch an internal request to any registered REST route, acting as an
-	 * administrator, so an agent can drive a plugin's own REST API.
-	 *
-	 * @param array $args { method, path, body, as_admin }
-	 * @return array
-	 */
-	public static function proxy( $args ) {
-		$method = strtoupper( isset( $args['method'] ) ? (string) $args['method'] : 'GET' );
-		$path   = isset( $args['path'] ) ? (string) $args['path'] : '';
-		if ( '' === $path ) {
-			return PP_Helpers::error( 'pp_missing_path', 'Provide a REST "path" (e.g. /wc/v3/settings).', 400 );
-		}
-		$as_admin = ! isset( $args['as_admin'] ) || ! empty( $args['as_admin'] );
-		$prev     = get_current_user_id();
-		if ( $as_admin ) {
-			$admins = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
-			if ( ! empty( $admins ) ) {
-				wp_set_current_user( (int) $admins[0] );
-			}
-		}
-		$req = new WP_REST_Request( $method, '/' . ltrim( $path, '/' ) );
-		if ( isset( $args['body'] ) && is_array( $args['body'] ) ) {
-			$req->set_body_params( $args['body'] );
-			foreach ( $args['body'] as $k => $v ) {
-				$req->set_param( $k, $v );
-			}
-		}
-		if ( isset( $args['query'] ) && is_array( $args['query'] ) ) {
-			foreach ( $args['query'] as $k => $v ) {
-				$req->set_param( $k, $v );
-			}
-		}
-		$resp = rest_do_request( $req );
-		if ( $as_admin ) {
-			wp_set_current_user( $prev );
-		}
-		return array(
-			'status' => $resp->get_status(),
-			'data'   => $resp->get_data(),
-		);
-	}
-
-	/**
-	 * Dispatch a wp_ajax_{action} handler (as admin), for plugins that only save
-	 * settings through admin-ajax. Populates $_POST/$_REQUEST from args, captures echoed
-	 * output, and tries to decode JSON.
-	 *
-	 * @param array $args { action, args{}, nopriv }
-	 * @return array
-	 */
-	public static function admin_ajax( $args ) {
-		$action = isset( $args['action'] ) ? sanitize_text_field( (string) $args['action'] ) : '';
-		if ( '' === $action ) {
-			return PP_Helpers::error( 'pp_missing_action', 'Provide an ajax "action".', 400 );
-		}
-		$hook = ( ! empty( $args['nopriv'] ) ? 'wp_ajax_nopriv_' : 'wp_ajax_' ) . $action;
-		if ( ! has_action( $hook ) ) {
-			return PP_Helpers::error( 'pp_no_ajax', sprintf( 'No handler registered for %s.', $hook ), 404 );
-		}
-		$payload = isset( $args['args'] ) && is_array( $args['args'] ) ? $args['args'] : array();
-		$prev    = get_current_user_id();
-		$admins  = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
-		if ( ! empty( $admins ) ) {
-			wp_set_current_user( (int) $admins[0] );
-		}
-		$bak_post = $_POST;      // phpcs:ignore
-		$bak_req  = $_REQUEST;   // phpcs:ignore
-		$_POST    = $payload;    // phpcs:ignore
-		$_REQUEST = array_merge( $_REQUEST, $payload ); // phpcs:ignore
-		if ( ! defined( 'DOING_AJAX' ) ) {
-			define( 'DOING_AJAX', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- DOING_AJAX is a WordPress core constant we set to emulate an admin-ajax request; it is not ours to prefix.
-		}
-		ob_start();
-		$out = null;
-		try {
-			do_action( $hook ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- firing an existing WordPress/third-party admin-ajax hook named by the caller, not a hook we define.
-		} catch ( \Throwable $e ) {
-			$out = array( 'exception' => $e->getMessage() );
-		}
-		$echoed = ob_get_clean();
-		$_POST    = $bak_post;   // phpcs:ignore
-		$_REQUEST = $bak_req;    // phpcs:ignore
-		wp_set_current_user( $prev );
-
-		$decoded = json_decode( (string) $echoed, true );
-		return array(
-			'action' => $action,
-			'output' => null !== $decoded ? $decoded : $echoed,
-			'error'  => $out,
-		);
-	}
-
-	/* ------------------------------------------------------------------ */
-	/* Universal escape hatch — arbitrary PHP (opt-in, OFF by default).   */
-	/* The eval() itself lives in PP_Exec (includes/class-pp-exec.php),   */
-	/* shipped only in the full build — never on WordPress.org, where     */
-	/* eval() is not permitted. These two members only read an option.    */
-	/* ------------------------------------------------------------------ */
-
-	const EXEC_OPTION = 'presspilot_allow_exec';
-
-	public static function exec_enabled() {
-		return PP_Danger::enabled( 'exec' );
 	}
 }

@@ -40,9 +40,11 @@ class PP_Admin {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_post_pp_regenerate', array( $this, 'handle_regenerate' ) );
 		add_action( 'admin_post_pp_save_scopes', array( $this, 'handle_save_scopes' ) );
+		add_action( 'admin_post_pp_create_token', array( $this, 'handle_create_token' ) );
+		add_action( 'admin_post_pp_revoke_token', array( $this, 'handle_revoke_token' ) );
+		add_action( 'admin_post_pp_toggle_token', array( $this, 'handle_toggle_token' ) );
 		add_action( 'admin_post_pp_save_mcp', array( $this, 'handle_save_mcp' ) );
 		add_action( 'admin_post_pp_save_agent', array( $this, 'handle_save_agent' ) );
-		add_action( 'admin_post_pp_extend_danger', array( $this, 'handle_extend_danger' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( PP_FILE ), array( $this, 'action_links' ) );
 	}
 
@@ -296,32 +298,55 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 		// Master on/off switch + optional IP allow-list.
 		PP_Auth::set_enabled( ! empty( $_POST['pp_api_enabled'] ) );
 		PP_Auth::save_allowed_ips( isset( $_POST['pp_allowed_ips'] ) ? sanitize_textarea_field( wp_unslash( $_POST['pp_allowed_ips'] ) ) : '' );
-		// Dangerous, time-limited opt-ins: each auto-disables 30 minutes after being
-		// switched on. Saving the Permissions page re-arms whichever boxes are ticked.
-		foreach ( array_keys( PP_Danger::labels() ) as $pp_dkey ) {
-			if ( 'exec' === $pp_dkey && ! class_exists( 'PP_Exec' ) ) {
-				continue;
-			}
-			PP_Danger::set( $pp_dkey, ! empty( $_POST[ 'pp_allow_' . $pp_dkey ] ) );
-		}
 		wp_safe_redirect( add_query_arg( 'pp_scopes_saved', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
 		exit;
 	}
 
-	/**
-	 * "Extend 10 minutes" for one dangerous capability. Adds exactly 600 seconds to
-	 * its auto-off timer — no more, no less — and only while it is currently on.
-	 */
-	public function handle_extend_danger() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_extend_danger' ) ) {
+	/** Create a new named token. Shows its secret once via a one-shot transient. */
+	public function handle_create_token() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_create_token' ) ) {
 			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
 		}
-		$cap  = isset( $_POST['pp_cap'] ) ? sanitize_key( wp_unslash( $_POST['pp_cap'] ) ) : '';
-		$caps = PP_Danger::labels();
-		if ( isset( $caps[ $cap ] ) ) {
-			PP_Danger::extend( $cap, 600 );
+		$label  = isset( $_POST['pp_token_label'] ) ? sanitize_text_field( wp_unslash( $_POST['pp_token_label'] ) ) : '';
+		$scopes = null;
+		// An unticked "all capabilities" box means a least-privilege subset was chosen.
+		if ( empty( $_POST['pp_token_all'] ) ) {
+			$scopes = isset( $_POST['pp_token_scopes'] ) && is_array( $_POST['pp_token_scopes'] )
+				? array_map( 'sanitize_key', wp_unslash( $_POST['pp_token_scopes'] ) )
+				: array();
 		}
-		wp_safe_redirect( add_query_arg( 'pp_extended', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
+		$ips = isset( $_POST['pp_token_ips'] ) ? sanitize_textarea_field( wp_unslash( $_POST['pp_token_ips'] ) ) : '';
+		$rec = PP_Auth::create_token( $label, $scopes, $ips );
+		// Surface the new secret exactly once, to this admin, on the next page load.
+		set_transient( 'pp_new_token_' . get_current_user_id(), $rec['token'], 60 );
+		wp_safe_redirect( add_query_arg( 'pp_token_created', $rec['id'], admin_url( 'admin.php?page=presspilot-permissions' ) ) );
+		exit;
+	}
+
+	/** Permanently revoke a token. */
+	public function handle_revoke_token() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_revoke_token' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
+		}
+		$id = isset( $_POST['pp_token_id'] ) ? sanitize_text_field( wp_unslash( $_POST['pp_token_id'] ) ) : '';
+		if ( '' !== $id ) {
+			PP_Auth::revoke_token( $id );
+		}
+		wp_safe_redirect( add_query_arg( 'pp_token_revoked', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
+		exit;
+	}
+
+	/** Enable or disable a token. */
+	public function handle_toggle_token() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pp_toggle_token' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'presspilot' ) );
+		}
+		$id = isset( $_POST['pp_token_id'] ) ? sanitize_text_field( wp_unslash( $_POST['pp_token_id'] ) ) : '';
+		$on = ! empty( $_POST['pp_token_on'] );
+		if ( '' !== $id ) {
+			PP_Auth::set_token_enabled( $id, $on );
+		}
+		wp_safe_redirect( add_query_arg( 'pp_token_toggled', '1', admin_url( 'admin.php?page=presspilot-permissions' ) ) );
 		exit;
 	}
 
@@ -1174,34 +1199,6 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 						<?php endforeach; ?>
 					</div>
 
-					<?php
-					foreach ( PP_Danger::labels() as $pp_dkey => $pp_d ) :
-						if ( 'exec' === $pp_dkey && ! class_exists( 'PP_Exec' ) ) {
-							continue;
-						}
-						$pp_d_on   = PP_Danger::enabled( $pp_dkey );
-						$pp_d_mins = $pp_d_on ? (int) ceil( PP_Danger::remaining( $pp_dkey ) / 60 ) : 0;
-						?>
-						<div class="pp-scope" style="border-color:#d63638;background:#fcf0f1;margin-top:14px;align-items:flex-start">
-							<input type="checkbox" name="pp_allow_<?php echo esc_attr( $pp_dkey ); ?>" value="1" <?php checked( $pp_d_on ); ?>>
-							<span>
-								<span class="pp-scope-key" style="color:#d63638">&#9888; <?php echo esc_html( $pp_d['label'] ); ?> (<code><?php echo esc_html( $pp_d['tag'] ); ?></code>)</span>
-								<span class="pp-scope-desc">
-									<?php echo esc_html( $pp_d['desc'] ); ?>
-									<strong style="color:#d63638"><?php echo esc_html__( 'Off by default. Dangerous — only enable it if you trust the API-key holder completely. It auto-disables 30 minutes after you switch it on.', 'presspilot' ); ?></strong>
-									<?php if ( $pp_d_on ) : ?>
-										<strong style="color:#d63638">&#9201;
-										<?php
-										/* translators: %d: minutes remaining before this capability auto-disables. */
-										echo esc_html( sprintf( _n( 'Active now — auto-disables in %d minute.', 'Active now — auto-disables in %d minutes.', $pp_d_mins, 'presspilot' ), $pp_d_mins ) );
-										?>
-										</strong>
-									<?php endif; ?>
-								</span>
-							</span>
-						</div>
-					<?php endforeach; ?>
-
 					<p class="description" style="margin-top:10px">
 						<?php
 						printf(
@@ -1219,43 +1216,116 @@ Respect the site's Permissions: some capabilities may be turned off (see /site �
 				</form>
 			</div>
 
-			<?php
-			$pp_active = array();
-			foreach ( PP_Danger::labels() as $pp_ak => $pp_al ) {
-				if ( PP_Danger::enabled( $pp_ak ) ) {
-					$pp_active[ $pp_ak ] = $pp_al;
-				}
-			}
-			if ( $pp_active ) :
-				?>
-			<div class="pp-card" style="border-color:#d63638;background:#fcf0f1">
-				<h2 style="color:#d63638"><span class="dashicons dashicons-clock"></span> <?php echo esc_html__( 'Active dangerous capabilities', 'presspilot' ); ?></h2>
-				<p class="description"><?php echo esc_html__( 'Each capability below switches itself off when its timer reaches zero. "Extend" adds exactly 10 minutes.', 'presspilot' ); ?></p>
-				<?php foreach ( $pp_active as $pp_ak => $pp_al ) : ?>
-					<div class="pp-active-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:10px 0">
-						<strong style="min-width:220px;color:#d63638"><?php echo esc_html( $pp_al['label'] ); ?> <code><?php echo esc_html( $pp_al['tag'] ); ?></code></strong>
-						<span><?php echo esc_html__( 'Auto-off in', 'presspilot' ); ?> <span class="pp-timer" data-left="<?php echo esc_attr( (int) PP_Danger::remaining( $pp_ak ) ); ?>" style="font-variant-numeric:tabular-nums;font-weight:700;color:#d63638">&mdash;</span></span>
-						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin:0">
-							<input type="hidden" name="action" value="pp_extend_danger">
-							<input type="hidden" name="pp_cap" value="<?php echo esc_attr( $pp_ak ); ?>">
-							<?php wp_nonce_field( 'pp_extend_danger' ); ?>
-							<button type="submit" class="button button-secondary"><?php echo esc_html__( 'Extend 10 minutes', 'presspilot' ); ?></button>
-						</form>
-					</div>
-				<?php endforeach; ?>
-			</div>
-				<?php
-				wp_print_inline_script_tag(
-					'(function(){var s=document.querySelectorAll(".pp-timer[data-left]");if(!s.length){return;}' .
-					'function f(n){n=Math.max(0,n|0);var m=Math.floor(n/60),x=n%60;return m+":"+(x<10?"0":"")+x;}' .
-					'function t(){s.forEach(function(e){var l=parseInt(e.getAttribute("data-left"),10)||0;e.textContent=f(l);' .
-					'if(l<=0){var r=e.closest(".pp-active-row");if(r){r.style.opacity="0.5";}}else{e.setAttribute("data-left",l-1);}});}' .
-					't();setInterval(t,1000);}());'
-				);
-				?>
-			<?php endif; ?>
+			<?php $this->render_tokens_card(); ?>
 
 			<?php $this->footer_note(); ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * The "API tokens" card on the Permissions screen: issue, scope, disable and
+	 * revoke additional named tokens alongside the primary key. Managed only here
+	 * (manage_options), never through the API.
+	 */
+	private function render_tokens_card() {
+		$tokens     = PP_Auth::get_tokens();
+		$labels     = PP_Auth::scope_labels();
+		$new_secret = get_transient( 'pp_new_token_' . get_current_user_id() );
+		if ( false !== $new_secret ) {
+			delete_transient( 'pp_new_token_' . get_current_user_id() );
+		}
+		$post_url = esc_url( admin_url( 'admin-post.php' ) );
+		?>
+		<div class="pp-card">
+			<h2><span class="dashicons dashicons-admin-network"></span> <?php echo esc_html__( 'API tokens', 'presspilot' ); ?></h2>
+			<p class="description">
+				<?php echo esc_html__( 'Issue separate tokens — one per agent, client or teammate — each with its own capabilities, optional IP allow-list and on/off switch. The primary key above always has full access. Revoke a token to cut off just that connection without touching the others. A token is shown once, at creation.', 'presspilot' ); ?>
+			</p>
+
+			<?php if ( false !== $new_secret ) : ?>
+				<div class="notice notice-success inline" style="margin:12px 0;padding:10px 12px">
+					<p style="margin:0 0 6px"><strong><?php echo esc_html__( 'New token created. Copy it now — it will not be shown again:', 'presspilot' ); ?></strong></p>
+					<input type="text" readonly onclick="this.select()" value="<?php echo esc_attr( $new_secret ); ?>" style="width:100%;font-family:monospace;direction:ltr">
+				</div>
+			<?php endif; ?>
+
+			<?php if ( $tokens ) : ?>
+				<table class="widefat striped" style="margin:10px 0">
+					<thead>
+						<tr>
+							<th><?php echo esc_html__( 'Label', 'presspilot' ); ?></th>
+							<th><?php echo esc_html__( 'Capabilities', 'presspilot' ); ?></th>
+							<th><?php echo esc_html__( 'Created', 'presspilot' ); ?></th>
+							<th><?php echo esc_html__( 'Last used', 'presspilot' ); ?></th>
+							<th><?php echo esc_html__( 'State', 'presspilot' ); ?></th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+					<?php foreach ( $tokens as $tok ) : ?>
+						<tr>
+							<td>
+								<strong><?php echo esc_html( '' !== $tok['label'] ? $tok['label'] : $tok['id'] ); ?></strong><br>
+								<code style="direction:ltr"><?php echo esc_html( substr( $tok['token'], 0, 6 ) . '…' . substr( $tok['token'], -4 ) ); ?></code>
+							</td>
+							<td><?php echo esc_html( null === $tok['scopes'] ? __( 'All granted', 'presspilot' ) : ( empty( $tok['scopes'] ) ? __( 'None', 'presspilot' ) : implode( ', ', $tok['scopes'] ) ) ); ?></td>
+							<td><?php echo esc_html( $tok['created'] ? $tok['created'] : '—' ); ?></td>
+							<td><?php echo esc_html( $tok['last_used'] ? $tok['last_used'] : __( 'never', 'presspilot' ) ); ?></td>
+							<td>
+								<form method="post" action="<?php echo $post_url; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped on assignment. ?>" style="margin:0">
+									<input type="hidden" name="action" value="pp_toggle_token">
+									<input type="hidden" name="pp_token_id" value="<?php echo esc_attr( $tok['id'] ); ?>">
+									<input type="hidden" name="pp_token_on" value="<?php echo esc_attr( $tok['enabled'] ? '0' : '1' ); ?>">
+									<?php wp_nonce_field( 'pp_toggle_token' ); ?>
+									<button type="submit" class="button button-small">
+										<?php echo $tok['enabled'] ? esc_html__( 'Enabled — disable', 'presspilot' ) : esc_html__( 'Disabled — enable', 'presspilot' ); ?>
+									</button>
+								</form>
+							</td>
+							<td>
+								<form method="post" action="<?php echo $post_url; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped on assignment. ?>" style="margin:0" onsubmit="return confirm('<?php echo esc_js( __( 'Revoke this token permanently? Any agent using it loses access immediately.', 'presspilot' ) ); ?>');">
+									<input type="hidden" name="action" value="pp_revoke_token">
+									<input type="hidden" name="pp_token_id" value="<?php echo esc_attr( $tok['id'] ); ?>">
+									<?php wp_nonce_field( 'pp_revoke_token' ); ?>
+									<button type="submit" class="button button-small button-link-delete" style="color:#d63638"><?php echo esc_html__( 'Revoke', 'presspilot' ); ?></button>
+								</form>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+
+			<h3 style="margin:14px 0 2px"><?php echo esc_html__( 'Issue a new token', 'presspilot' ); ?></h3>
+			<form method="post" action="<?php echo $post_url; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped on assignment. ?>">
+				<input type="hidden" name="action" value="pp_create_token">
+				<?php wp_nonce_field( 'pp_create_token' ); ?>
+				<p>
+					<label><?php echo esc_html__( 'Label', 'presspilot' ); ?><br>
+					<input type="text" name="pp_token_label" class="regular-text" placeholder="<?php echo esc_attr__( 'e.g. Claude Code — staging', 'presspilot' ); ?>"></label>
+				</p>
+				<p>
+					<label><input type="checkbox" name="pp_token_all" value="1" checked onchange="var g=document.getElementById('pp-token-scopes');if(g){g.style.display=this.checked?'none':'grid';}">
+					<?php echo esc_html__( 'All currently-granted capabilities (uncheck to restrict this token)', 'presspilot' ); ?></label>
+				</p>
+				<div id="pp-token-scopes" class="pp-scope-grid" style="display:none">
+					<?php foreach ( $labels as $key => $label ) : ?>
+						<label class="pp-scope">
+							<input type="checkbox" name="pp_token_scopes[]" value="<?php echo esc_attr( $key ); ?>">
+							<span>
+								<span class="pp-scope-key"><?php echo esc_html( $key ); ?></span>
+								<span class="pp-scope-desc"><?php echo esc_html( $label ); ?></span>
+							</span>
+						</label>
+					<?php endforeach; ?>
+				</div>
+				<p>
+					<label><?php echo esc_html__( 'IP allow-list for this token (optional, one per line; blank = inherit the global list)', 'presspilot' ); ?><br>
+					<textarea name="pp_token_ips" rows="2" class="large-text code" placeholder="203.0.113.10&#10;198.51.100.0/24"></textarea></label>
+				</p>
+				<?php submit_button( __( 'Create token', 'presspilot' ), 'secondary' ); ?>
+			</form>
 		</div>
 		<?php
 	}

@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Build the distributable PressPilot plugin zip (slug "presspilot") into dist/.
 #
-# One build with every capability. The dangerous ones (PHP exec, plugin install,
-# raw SQL, admin-ajax) are NOT stripped — they are gated behind the time-limited,
-# admin-only opt-in toggles on the Permissions screen. The GitHub self-updater is
-# the only thing excluded, because the Update URI mechanism is not allowed in the
-# WordPress.org directory.
+# One build, a fixed set of vetted operations: no arbitrary PHP, no raw SQL, no
+# arbitrary DB writes, no admin-ajax dispatch, no REST proxy. The GitHub self-updater
+# is excluded because the Update URI mechanism is not allowed in the WordPress.org
+# directory.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 DIST="$ROOT/dist"; rm -rf "$DIST"; mkdir -p "$DIST"

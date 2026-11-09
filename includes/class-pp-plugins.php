@@ -48,9 +48,12 @@ class PP_Plugins {
 	}
 
 	/**
-	 * Install a plugin from the wordpress.org repo (by slug) or a base64 zip.
+	 * Install a plugin from the WordPress.org repository by slug.
 	 *
-	 * @param array $args slug | zip (base64), activate (bool).
+	 * Only the official repository is a source — never an uploaded or remote zip —
+	 * so the plugin never installs arbitrary code from outside the directory.
+	 *
+	 * @param array $args slug, activate (bool).
 	 * @return array|WP_Error
 	 */
 	public static function install( $args ) {
@@ -60,31 +63,19 @@ class PP_Plugins {
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
 		$slug     = isset( $args['slug'] ) ? sanitize_key( $args['slug'] ) : '';
-		$zip_b64  = isset( $args['zip'] ) ? (string) $args['zip'] : '';
 		$activate = ! empty( $args['activate'] );
 
-		if ( '' !== $slug ) {
-			$source = self::wporg_download_link( $slug );
-			if ( is_wp_error( $source ) ) {
-				return $source;
-			}
-			$cleanup = null;
-		} elseif ( '' !== $zip_b64 ) {
-			$source = self::stash_zip( $zip_b64 );
-			if ( is_wp_error( $source ) ) {
-				return $source;
-			}
-			$cleanup = $source;
-		} else {
-			return PP_Helpers::error( 'pp_missing_source', 'Provide a repo "slug" or a base64 "zip".', 400 );
+		if ( '' === $slug ) {
+			return PP_Helpers::error( 'pp_missing_slug', 'Provide a WordPress.org repository "slug".', 400 );
+		}
+		$source = self::wporg_download_link( $slug );
+		if ( is_wp_error( $source ) ) {
+			return $source;
 		}
 
 		$skin     = class_exists( 'WP_Ajax_Upgrader_Skin' ) ? new WP_Ajax_Upgrader_Skin() : new Automatic_Upgrader_Skin();
 		$upgrader = new Plugin_Upgrader( $skin );
 		$result   = $upgrader->install( $source, array( 'overwrite_package' => true ) );
-		if ( $cleanup ) {
-			wp_delete_file( $cleanup );
-		}
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -187,23 +178,5 @@ class PP_Plugins {
 			return PP_Helpers::error( 'pp_no_download', sprintf( 'No download link for plugin "%s".', $slug ), 502 );
 		}
 		return $api->download_link;
-	}
-
-	/**
-	 * Write a base64 zip to a temp file for the upgrader.
-	 *
-	 * @param string $b64 Base64 zip.
-	 * @return string|WP_Error Temp file path.
-	 */
-	private static function stash_zip( $b64 ) {
-		$bytes = base64_decode( $b64, true );
-		if ( false === $bytes ) {
-			return PP_Helpers::error( 'pp_bad_zip', 'The "zip" is not valid base64.', 400 );
-		}
-		$tmp = wp_tempnam( 'pp-plugin.zip' );
-		if ( ! $tmp || false === file_put_contents( $tmp, $bytes ) ) {
-			return PP_Helpers::error( 'pp_tmp_failed', 'Could not write the uploaded zip.', 500 );
-		}
-		return $tmp;
 	}
 }

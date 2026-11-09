@@ -130,7 +130,7 @@ class PP_REST {
 		register_rest_route( $ns, '/settings/custom-css', $this->route( 'POST', 'set_custom_css', 'styles' ) );
 		register_rest_route( $ns, '/template', $this->route( 'POST', 'upsert_template', 'templates' ) );
 
-		// Configuration assistant (generic options/meta/terms, snapshots, discovery, REST proxy, adapters).
+		// Configuration: read/write options & meta (vetted, validated, with restore points), terms.
 		register_rest_route( $ns, '/options', $this->route( 'GET', 'config_get_options', 'config' ) );
 		register_rest_route( $ns, '/options', $this->route( 'POST', 'config_set_options', 'config' ) );
 		register_rest_route( $ns, '/meta', $this->route( 'GET', 'config_get_meta', 'config' ) );
@@ -141,20 +141,29 @@ class PP_REST {
 		register_rest_route( $ns, '/config/snapshot', $this->route( 'POST', 'config_snapshot', 'config' ) );
 		register_rest_route( $ns, '/config/diff', $this->route( 'GET', 'config_diff', 'config' ) );
 		register_rest_route( $ns, '/config/restore', $this->route( 'POST', 'config_restore', 'config' ) );
-		register_rest_route( $ns, '/registered-settings', $this->route( 'GET', 'config_registered_settings', 'config' ) );
-		register_rest_route( $ns, '/rest-routes', $this->route( 'GET', 'config_rest_routes', 'config' ) );
-		register_rest_route( $ns, '/discover', $this->route( 'GET', 'config_discover', 'config' ) );
-		register_rest_route( $ns, '/proxy', $this->route( 'POST', 'config_proxy', 'config' ) );
-		register_rest_route( $ns, '/adapters', $this->route( 'GET', 'adapters_list', 'config' ) );
-		register_rest_route( $ns, '/adapters/(?P<slug>[a-z0-9\-]+)/(?P<action>[a-z0-9\-_]+)', $this->route( 'POST', 'adapters_run', 'config' ) );
 
-		// Reach into any plugin: custom DB tables, admin-ajax handlers, and an opt-in code hatch.
-		register_rest_route( $ns, '/db/tables', $this->route( 'GET', 'db_tables', 'config' ) );
-		register_rest_route( $ns, '/db/describe', $this->route( 'GET', 'db_describe', 'config' ) );
-		register_rest_route( $ns, '/db/select', $this->route( 'POST', 'db_select', 'config' ) );
-		register_rest_route( $ns, '/db/write', $this->route( 'POST', 'db_write', 'config' ) );
-		register_rest_route( $ns, '/admin-ajax', $this->route( 'POST', 'config_admin_ajax', 'config' ) );
-		register_rest_route( $ns, '/exec', $this->route( 'POST', 'config_exec', 'config' ) );
+		// Discovery: enumerate settings, REST routes and a plugin's option keys.
+		register_rest_route( $ns, '/registered-settings', $this->route( 'GET', 'config_registered_settings', 'discovery' ) );
+		register_rest_route( $ns, '/rest-routes', $this->route( 'GET', 'config_rest_routes', 'discovery' ) );
+		register_rest_route( $ns, '/discover', $this->route( 'GET', 'config_discover', 'discovery' ) );
+
+		// Curated per-plugin adapters — a vetted menu of actions, never arbitrary code.
+		register_rest_route( $ns, '/adapters', $this->route( 'GET', 'adapters_list', 'adapters' ) );
+		register_rest_route( $ns, '/adapters/(?P<slug>[a-z0-9\-]+)/(?P<action>[a-z0-9\-_]+)', $this->route( 'POST', 'adapters_run', 'adapters' ) );
+
+		// Database: read-only, structured queries (no raw SQL, no writes).
+		register_rest_route( $ns, '/db/tables', $this->route( 'GET', 'db_tables', 'database' ) );
+		register_rest_route( $ns, '/db/describe', $this->route( 'GET', 'db_describe', 'database' ) );
+		register_rest_route( $ns, '/db/query', $this->route( 'POST', 'db_query', 'database' ) );
+
+		// Filesystem: read-only listing and reading of files under allow-listed roots.
+		register_rest_route( $ns, '/files/list', $this->route( 'GET', 'files_list', 'files' ) );
+		register_rest_route( $ns, '/files/read', $this->route( 'GET', 'files_read', 'files' ) );
+
+		// Security & maintenance: read-only scans + a vetted, reversible hardening/optimize catalog.
+		register_rest_route( $ns, '/security/scan', $this->route( 'POST', 'security_scan', 'security' ) );
+		register_rest_route( $ns, '/security/actions', $this->route( 'GET', 'security_actions', 'security' ) );
+		register_rest_route( $ns, '/security/apply', $this->route( 'POST', 'security_apply', 'security' ) );
 
 		// Model Context Protocol — the direct agent connection (Claude Code, Codex, …).
 		// Auth is handled inside the handler so failures come back as JSON-RPC.
@@ -998,12 +1007,8 @@ class PP_REST {
 	}
 
 	public function install_plugin( $request ) {
-		if ( ! PP_Danger::enabled( 'plugin_install' ) ) {
-			return rest_ensure_response( PP_Helpers::error( 'pp_install_disabled', 'Installing plugins is disabled. Enable the red "Allow installing plugins" toggle on the PressPilot Permissions screen (it auto-disables after 30 minutes).', 403 ) );
-		}
 		return rest_ensure_response( PP_Plugins::install( array(
 			'slug'     => $request->get_param( 'slug' ),
-			'zip'      => $request->get_param( 'zip' ),
 			'activate' => $request->get_param( 'activate' ),
 		) ) );
 	}
@@ -1340,16 +1345,6 @@ class PP_REST {
 		) ) );
 	}
 
-	public function config_proxy( $request ) {
-		return rest_ensure_response( PP_Config::proxy( array(
-			'method'   => $request->get_param( 'method' ),
-			'path'     => $request->get_param( 'path' ),
-			'body'     => $request->get_param( 'body' ),
-			'query'    => $request->get_param( 'query' ),
-			'as_admin' => $request->get_param( 'as_admin' ),
-		) ) );
-	}
-
 	public function adapters_list() {
 		return rest_ensure_response( PP_Adapters::listing() );
 	}
@@ -1370,46 +1365,48 @@ class PP_REST {
 		return rest_ensure_response( PP_DB::describe( (string) $request->get_param( 'table' ) ) );
 	}
 
-	public function db_select( $request ) {
-		return rest_ensure_response( PP_DB::select( array(
+	public function db_query( $request ) {
+		return rest_ensure_response( PP_DB::query( array(
 			'table'   => $request->get_param( 'table' ),
 			'columns' => $request->get_param( 'columns' ),
 			'where'   => $request->get_param( 'where' ),
 			'order'   => $request->get_param( 'order' ),
 			'dir'     => $request->get_param( 'dir' ),
 			'limit'   => $request->get_param( 'limit' ),
-			'raw'     => $request->get_param( 'raw' ),
 		) ) );
 	}
 
-	public function db_write( $request ) {
-		return rest_ensure_response( PP_DB::write( array(
-			'op'      => $request->get_param( 'op' ),
-			'table'   => $request->get_param( 'table' ),
-			'data'    => $request->get_param( 'data' ),
-			'where'   => $request->get_param( 'where' ),
+	public function files_list( $request ) {
+		return rest_ensure_response( PP_Files::list_dir( array(
+			'root' => $request->get_param( 'root' ),
+			'path' => $request->get_param( 'path' ),
+			'glob' => $request->get_param( 'glob' ),
+		) ) );
+	}
+
+	public function files_read( $request ) {
+		return rest_ensure_response( PP_Files::read( array(
+			'root' => $request->get_param( 'root' ),
+			'path' => $request->get_param( 'path' ),
+		) ) );
+	}
+
+	public function security_scan( $request ) {
+		return rest_ensure_response( PP_Security::scan( array(
+			'checks' => $request->get_param( 'checks' ),
+		) ) );
+	}
+
+	public function security_actions() {
+		return rest_ensure_response( PP_Security::actions() );
+	}
+
+	public function security_apply( $request ) {
+		return rest_ensure_response( PP_Security::apply( array(
+			'action'  => $request->get_param( 'action' ),
 			'dry_run' => filter_var( $request->get_param( 'dry_run' ), FILTER_VALIDATE_BOOLEAN ),
-			'force'   => filter_var( $request->get_param( 'force' ), FILTER_VALIDATE_BOOLEAN ),
-			'limit'   => $request->get_param( 'limit' ),
+			'undo'    => filter_var( $request->get_param( 'undo' ), FILTER_VALIDATE_BOOLEAN ),
 		) ) );
-	}
-
-	public function config_admin_ajax( $request ) {
-		if ( ! PP_Danger::enabled( 'admin_ajax' ) ) {
-			return rest_ensure_response( PP_Helpers::error( 'pp_admin_ajax_disabled', 'admin-ajax dispatch is disabled. Enable the red "Allow admin-ajax dispatch" toggle on the PressPilot Permissions screen (it auto-disables after 30 minutes).', 403 ) );
-		}
-		return rest_ensure_response( PP_Config::admin_ajax( array(
-			'action' => $request->get_param( 'action' ),
-			'args'   => $request->get_param( 'args' ),
-			'nopriv' => filter_var( $request->get_param( 'nopriv' ), FILTER_VALIDATE_BOOLEAN ),
-		) ) );
-	}
-
-	public function config_exec( $request ) {
-		if ( ! class_exists( 'PP_Exec' ) ) {
-			return rest_ensure_response( PP_Helpers::error( 'pp_exec_unavailable', 'Code execution is not available in this build of PressPilot.', 404 ) );
-		}
-		return rest_ensure_response( PP_Exec::run( array( 'code' => $request->get_param( 'code' ) ) ) );
 	}
 
 	private function summary( $post ) {

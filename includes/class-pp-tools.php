@@ -647,7 +647,7 @@ class PP_Tools {
 		$t['wp_config_discover'] = array(
 			'title'       => 'Discover a plugin\'s configuration surface',
 			'description' => 'Given a plugin slug or an option prefix, return its option keys, registered settings and its own REST routes. START HERE when asked to configure a plugin — it tells you which keys exist before you write anything.',
-			'scope'       => 'config',
+			'scope'       => 'discovery',
 			'method'      => 'GET',
 			'path'        => '/discover',
 			'schema'      => self::obj( array(
@@ -755,25 +755,10 @@ class PP_Tools {
 			'essential'   => false,
 		);
 
-		$t['wp_proxy_rest'] = array(
-			'title'       => 'Call another plugin\'s REST API',
-			'description' => 'Dispatch a request to ANY REST route on this site as an administrator — WooCommerce, Yoast, the core wp/v2 API, anything. This is the cleanest way to configure a plugin that exposes REST. Use wp_list_rest_routes to find the paths.',
-			'scope'       => 'config',
-			'method'      => 'POST',
-			'path'        => '/proxy',
-			'schema'      => self::obj( array(
-				'method' => self::str( 'GET | POST | PUT | PATCH | DELETE.' ),
-				'path'   => self::str( 'Route path, e.g. "/wc/v3/settings" or "/wp/v2/users/me".' ),
-				'body'   => self::map( 'Request body / query parameters.' ),
-			), array( 'path' ) ),
-			'read_only'   => false,
-			'essential'   => true,
-		);
-
 		$t['wp_list_rest_routes'] = array(
 			'title'       => 'List REST routes',
-			'description' => 'Every REST route registered on this site, optionally filtered by namespace prefix — the map for wp_proxy_rest.',
-			'scope'       => 'config',
+			'description' => 'Every REST route registered on this site, optionally filtered by namespace prefix — so you can see what a plugin exposes.',
+			'scope'       => 'discovery',
 			'method'      => 'GET',
 			'path'        => '/rest-routes',
 			'schema'      => self::obj( array( 'prefix' => self::str( 'Namespace prefix, e.g. "/wc/v3".' ) ) ),
@@ -783,8 +768,8 @@ class PP_Tools {
 
 		$t['wp_list_adapters'] = array(
 			'title'       => 'List plugin adapters',
-			'description' => 'Curated connectors for plugins that only expose a PHP API (Polylang, …): which adapters exist, their whitelisted actions, and whether the plugin is active.',
-			'scope'       => 'config',
+			'description' => 'Curated connectors for supported plugins (Polylang, …): which adapters exist, their vetted whitelisted actions, and whether the plugin is active.',
+			'scope'       => 'adapters',
 			'method'      => 'GET',
 			'path'        => '/adapters',
 			'schema'      => self::obj(),
@@ -795,7 +780,7 @@ class PP_Tools {
 		$t['wp_run_adapter'] = array(
 			'title'       => 'Run a plugin adapter action',
 			'description' => 'Run one whitelisted adapter action, e.g. slug "polylang" action "add_language" with {locale:"fa_IR", name:"Persian", rtl:1}. Only registered actions run, and only when the plugin is active.',
-			'scope'       => 'config',
+			'scope'       => 'adapters',
 			'method'      => 'POST',
 			'path'        => '/adapters/{slug}/{action}',
 			'schema'      => self::obj( array(
@@ -810,7 +795,7 @@ class PP_Tools {
 		$t['wp_db_tables'] = array(
 			'title'       => 'List database tables',
 			'description' => 'Custom plugin tables with row counts. Use it when a plugin stores its configuration outside the options table.',
-			'scope'       => 'config',
+			'scope'       => 'database',
 			'method'      => 'GET',
 			'path'        => '/db/tables',
 			'schema'      => self::obj( array( 'prefix' => self::str( 'Table-name prefix filter.' ) ) ),
@@ -821,7 +806,7 @@ class PP_Tools {
 		$t['wp_db_describe'] = array(
 			'title'       => 'Describe a database table',
 			'description' => 'Column names, types and keys of one table.',
-			'scope'       => 'config',
+			'scope'       => 'database',
 			'method'      => 'GET',
 			'path'        => '/db/describe',
 			'schema'      => self::obj( array( 'table' => self::str( 'Table name.' ) ), array( 'table' ) ),
@@ -829,70 +814,95 @@ class PP_Tools {
 			'essential'   => false,
 		);
 
-		$t['wp_db_select'] = array(
+		$t['wp_db_query'] = array(
 			'title'       => 'Read from a database table',
-			'description' => 'Structured read ({table, where, columns, order, limit}) or a single read-only SELECT via raw. Never modifies anything. The structured form needs no opt-in; the raw SELECT form is OFF by default and needs the red "Allow raw SQL SELECT" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled.',
-			'scope'       => 'config',
+			'description' => 'Structured, read-only query of any table ({table, where, columns, order, dir, limit}). The query is built by the plugin from validated identifiers with bound values — no raw SQL, no writes. Use the typed tools (content, options, meta, terms) to change data.',
+			'scope'       => 'database',
 			'method'      => 'POST',
-			'path'        => '/db/select',
+			'path'        => '/db/query',
 			'schema'      => self::obj( array(
 				'table'   => self::str( 'Table name.' ),
 				'where'   => self::map( 'Equality filters {column: value}.' ),
 				'columns' => self::arr( 'Columns to return.' ),
-				'order'   => self::str( 'ORDER BY clause, e.g. "id DESC".' ),
-				'limit'   => self::int( 'Row limit.' ),
-				'raw'     => self::str( 'A single read-only SELECT statement (alternative to the structured form).' ),
+				'order'   => self::str( 'Column to order by.' ),
+				'dir'     => self::str( 'asc | desc.' ),
+				'limit'   => self::int( 'Row limit (max 500).' ),
+			), array( 'table' ) ),
+			'read_only'   => true,
+			'essential'   => false,
+		);
+
+		/* ---------------- Files (read-only) ---------------- */
+
+		$t['wp_files_list'] = array(
+			'title'       => 'List files under an allow-listed root',
+			'description' => 'List a directory under one of the allow-listed roots: uploads, content, themes, plugins, site. Read-only; path traversal is blocked.',
+			'scope'       => 'files',
+			'method'      => 'GET',
+			'path'        => '/files/list',
+			'schema'      => self::obj( array(
+				'root' => self::str( 'uploads | content | themes | plugins | site.' ),
+				'path' => self::str( 'Relative path within the root.' ),
+				'glob' => self::str( 'Optional filename pattern, e.g. "*.php".' ),
+			), array( 'root' ) ),
+			'read_only'   => true,
+			'essential'   => false,
+		);
+
+		$t['wp_files_read'] = array(
+			'title'       => 'Read a file under an allow-listed root',
+			'description' => 'Read a text file (size-capped) under an allow-listed root — e.g. the debug log, a theme template, a plugin source file. Read-only; wp-config.php and secrets are never returned.',
+			'scope'       => 'files',
+			'method'      => 'GET',
+			'path'        => '/files/read',
+			'schema'      => self::obj( array(
+				'root' => self::str( 'uploads | content | themes | plugins | site.' ),
+				'path' => self::str( 'Relative path within the root, e.g. "debug.log".' ),
+			), array( 'root', 'path' ) ),
+			'read_only'   => true,
+			'essential'   => false,
+		);
+
+		/* ---------------- Security & maintenance ---------------- */
+
+		$t['wp_security_scan'] = array(
+			'title'       => 'Scan the site (read-only)',
+			'description' => 'Run read-only security/health scans: files (executable files in uploads), config (hardening state, debug flags), accounts (admins, guessable usernames), plugins (inactive, updates). Changes nothing.',
+			'scope'       => 'security',
+			'method'      => 'POST',
+			'path'        => '/security/scan',
+			'schema'      => self::obj( array(
+				'checks' => self::arr( 'Subset of: files, config, accounts, plugins. Omit for all.' ),
 			) ),
 			'read_only'   => true,
 			'essential'   => false,
 		);
 
-		$t['wp_db_write'] = array(
-			'title'       => 'Write to a database table',
-			'description' => 'insert / update / delete on a custom plugin table. ALWAYS dry_run first. Updates and deletes require a where clause, affected rows are capped and returned as a before-image, and core WordPress tables are refused (use the typed tools instead) unless force:true. Dangerous — prefer options, meta, the plugin\'s REST API or an adapter.',
-			'scope'       => 'config',
-			'method'      => 'POST',
-			'path'        => '/db/write',
-			'schema'      => self::obj( array(
-				'op'      => self::str( 'insert | update | delete.', array( 'enum' => array( 'insert', 'update', 'delete' ) ) ),
-				'table'   => self::str( 'Table name.' ),
-				'data'    => self::map( 'Column → value (insert/update).' ),
-				'where'   => self::map( 'Equality filters (required for update/delete).' ),
-				'dry_run' => self::bool( 'Preview without writing.' ),
-				'force'   => self::bool( 'Allow writing a core WordPress table. Dangerous.' ),
-			), array( 'op', 'table' ) ),
-			'read_only'   => false,
+		$t['wp_security_actions'] = array(
+			'title'       => 'List hardening & maintenance actions',
+			'description' => 'The vetted catalogue of hardening toggles (reversible) and maintenance cleaners, with their current state.',
+			'scope'       => 'security',
+			'method'      => 'GET',
+			'path'        => '/security/actions',
+			'schema'      => self::obj(),
+			'read_only'   => true,
 			'essential'   => false,
 		);
 
-		$t['wp_admin_ajax'] = array(
-			'title'       => 'Dispatch an admin-ajax action',
-			'description' => 'Run a wp_ajax_{action} handler as an administrator — for plugins that only persist settings through admin-ajax. OFF by default: needs the red "Allow admin-ajax dispatch" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled.',
-			'scope'       => 'config',
+		$t['wp_security_apply'] = array(
+			'title'       => 'Apply a hardening / maintenance action',
+			'description' => 'Apply one vetted action by id (e.g. disable_xmlrpc, block_user_enum, uploads_no_exec, clean_revisions). Hardening toggles are reversible with undo:true. Always dry_run:true first to preview. Deletion-type cleaners are not reversible.',
+			'scope'       => 'security',
 			'method'      => 'POST',
-			'path'        => '/admin-ajax',
+			'path'        => '/security/apply',
 			'schema'      => self::obj( array(
-				'action' => self::str( 'The action name (without the wp_ajax_ prefix).' ),
-				'args'   => self::map( 'POST/GET arguments for the handler.' ),
-				'nopriv' => self::bool( 'Dispatch the wp_ajax_nopriv_ variant.' ),
+				'action'  => self::str( 'Action id from wp_security_actions.' ),
+				'dry_run' => self::bool( 'Preview without changing anything.' ),
+				'undo'    => self::bool( 'Reverse a reversible toggle/file action.' ),
 			), array( 'action' ) ),
 			'read_only'   => false,
 			'essential'   => false,
 		);
-
-		// wp_exec_php exists only in the full build (PP_Exec ships outside WordPress.org).
-		if ( class_exists( 'PP_Exec' ) ) {
-			$t['wp_exec_php'] = array(
-				'title'       => 'Run PHP (last resort)',
-				'description' => 'Execute PHP inside WordPress and return the value. This is the LAST resort: try an adapter, then the plugin\'s own REST API, then options/meta/terms, then the db tools, then admin-ajax first. OFF by default and as powerful as installing a plugin: an admin must switch on the red "Allow code execution" toggle under PressPilot -> Permissions, which auto-disables 30 minutes after it is enabled. Gated by the API key and the config capability.',
-				'scope'       => 'config',
-				'method'      => 'POST',
-				'path'        => '/exec',
-				'schema'      => self::obj( array( 'code' => self::str( 'PHP source; use return to send a value back, e.g. return get_option("x");' ) ), array( 'code' ) ),
-				'read_only'   => false,
-				'essential'   => false,
-			);
-		}
 
 		/* ---------------- Generic escape hatches ---------------- */
 
@@ -952,20 +962,11 @@ class PP_Tools {
 	public static function available() {
 		$profile = self::profile();
 		$out     = array();
-		// Dangerous tools carry a second gate: a time-limited, admin opt-in toggle.
-		$danger_tools = array(
-			'wp_exec_php'       => 'exec',
-			'wp_install_plugin' => 'plugin_install',
-			'wp_admin_ajax'     => 'admin_ajax',
-		);
 		foreach ( self::all() as $name => $tool ) {
 			if ( 'essential' === $profile && empty( $tool['essential'] ) ) {
 				continue;
 			}
 			if ( ! empty( $tool['scope'] ) && ! PP_Auth::scope_allowed( $tool['scope'] ) ) {
-				continue;
-			}
-			if ( isset( $danger_tools[ $name ] ) && ! PP_Danger::enabled( $danger_tools[ $name ] ) ) {
 				continue;
 			}
 			$out[ $name ] = $tool;

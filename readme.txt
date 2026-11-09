@@ -5,7 +5,7 @@ Tags: mcp, ai, gutenberg, rest-api, multilingual
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 3.1.2
+Stable tag: 4.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,9 +41,13 @@ Features:
 * Block-theme (FSE) support: create/update `wp_template` and `wp_template_part` (header/footer, single, archive).
 * Global styles without Elementor: Customizer Additional CSS and block-theme theme.json global styles (fonts, palette, CSS).
 * Navigation menus: create, edit items (nested), and assign to theme locations.
-* Plugins: install from the repo or a zip, activate/deactivate/delete (e.g. remove Elementor after migration).
+* Plugins: install from the WordPress.org repository by slug, activate/deactivate/delete (e.g. remove Elementor after migration).
+* Configure plugins through vetted, validated operations: read/write options & meta (every write makes a restore point), structured read-only database queries, curated per-plugin adapters, and read-only discovery of settings and REST routes.
+* **Security & maintenance**: read-only scans (executable files in uploads, hardening state, admin accounts, plugin health) and a vetted, reversible catalogue of hardening toggles (disable the file editor, disable XML-RPC, hide the version, block user enumeration, security headers) and cleanup actions.
+* Read-only file access under allow-listed roots (debug log, theme/plugin source) for debugging and review.
 * Discover the block/widget vocabulary and register reusable patterns.
 * **Permissions**: per-capability toggles in the admin (default: everything on) so you control exactly what the API may touch.
+* **Multiple API tokens**: issue a separate token per agent, client or teammate — each with its own capability subset (least privilege), optional per-token IP allow-list, and an on/off switch. Revoke one without touching the others; each token's last-used time is shown.
 * API-key authentication with constant-time comparison and one-click key regeneration.
 * Safety controls: master API on/off switch and an optional IP/CIDR allow-list.
 
@@ -68,10 +72,13 @@ Re-save Permalinks (Settings > Permalinks > Save). Or use the fallback form `/?r
 Every endpoint — MCP included — requires the secret API key, compared in constant time. Keep it
 private and serve your site over HTTPS; you can regenerate it at any time. The Permissions screen
 adds a master on/off switch, an optional IP/CIDR allow-list, and per-capability toggles: a
-capability you turn off is not just refused, its tools are hidden from the agent entirely. The
-four most powerful capabilities — running PHP, installing plugins, raw SQL and admin-ajax — are
-each a separate red opt-in on that screen: off by default, and each one automatically switches
-itself back off 30 minutes after you enable it.
+capability you turn off is not just refused, its tools are hidden from the agent entirely. You can
+also issue a separate token per agent with only the capabilities it needs and revoke it on its own.
+Every
+operation is a specific, predefined, validated action with its own capability check — there is no
+arbitrary code execution, no arbitrary SQL and no arbitrary file writing. Reads are read-only;
+configuration writes create a restore point you can roll back; and the hardening actions are
+reversible.
 
 = Which agents can connect? =
 Anything that speaks MCP over HTTP — Claude Code, OpenAI Codex, Cursor, Windsurf, VS Code and
@@ -107,22 +114,21 @@ own machine or in your own client, not by this plugin.
 
 == Changelog ==
 
+= 4.0.0 =
+* **Rebuilt around a fixed set of vetted, predefined operations.** Arbitrary PHP execution (`/exec`), raw SQL, arbitrary database writes, admin-ajax dispatch and the generic REST proxy have been **removed**. In their place: a structured, read-only database query (`/db/query`), read-only file access under allow-listed roots (`/files/list`, `/files/read`), and a security & maintenance engine (`/security/scan`, `/security/actions`, `/security/apply`) with read-only scans and a reversible hardening/cleanup catalogue. Installing a plugin is now by WordPress.org slug only — never an uploaded zip.
+* New capability scopes split the old catch-all `config` into `database`, `files`, `security`, `discovery` and `adapters`, each independently toggleable.
+* **Multiple named API tokens** alongside the primary key, each with its own capability subset, optional IP allow-list and on/off switch, managed from the Permissions screen. Tokens are managed only in wp-admin, never through the API.
+* This is a breaking change: agents that relied on `/exec`, `/proxy`, `/db/write`, raw `/db/select` or `/admin-ajax` should use the typed operations, a structured `/db/query`, a curated adapter, or the new security engine instead.
+
 = 3.1.2 =
 * The most powerful capabilities now have a dedicated, time-limited control. Running PHP (`/exec`), installing plugins, raw SQL `SELECT` and admin-ajax dispatch are each a separate **red opt-in** on the Permissions screen — off by default, and each one **auto-disables 30 minutes after it is switched on**. Their tool descriptions say the same, and the endpoints refuse the call while the toggle is off.
-
-= 3.0.1 =
-* Prepared for the WordPress.org plugin directory: the GitHub self-updater and the `Update URI` header have been removed (the directory serves updates), and the code was brought in line with the plugin-review coding standards — admin-screen input sanitising, prepared and guarded database access, `wp_delete_file()` in place of `unlink()`, a non-deprecated global-styles call, prefixed global functions and translator comments. No change to the REST/MCP tools.
-
-= 2.5.0 =
-* **Cache plugins are now first-class.** `GET /cache` reports every cache layer in front of the site — WP Rocket, LiteSpeed Cache, WP-Optimize, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Autoptimize, Breeze, SiteGround Optimizer, Hummingbird and Nginx Helper — with its version, what it caches, which purge scopes it supports, and where it keeps its settings. Also reports the persistent object cache, `advanced-cache.php`, `WP_CACHE` and opcache.
-* `POST /cache/purge` clears them all through one call, by `scope`: everything, a single post, or a single URL, optionally flushing the object cache and opcache too. A plugin that cannot do the narrow scope falls back to a full purge and says so with `widened: true`, so "I purged one URL" never quietly means "I cleared the site".
-* **Purges automatically after its own writes.** Editing a page and then fetching the URL to check the result used to return whatever the cache had from before the edit — a failure that looks exactly like a write that did not take. PressPilot now clears the cache once at the end of any of its own requests that changed something: once per request, not once per write, so a twenty-page batch triggers one purge. Switch it off with `POST /cache/auto-purge {"enabled": false}`.
-* Every plugin is probed before it is called, so one that is absent — or whose API moved between versions — is skipped rather than throwing. Cache-plugin settings are deliberately read through `/options` (which snapshots and can roll back) instead of being written blind from here; `GET /cache` tells you which option each plugin uses.
-* New `cache` scope, on by default like the others, so existing keys keep working.
 
 Older versions are listed in changelog.txt.
 
 == Upgrade Notice ==
+
+= 4.0.0 =
+Breaking change. Arbitrary PHP exec, raw SQL, arbitrary DB writes, admin-ajax and the REST proxy are removed in favour of vetted operations: structured read-only DB queries, read-only file access, and a reversible security engine. Plugin installs are by WordPress.org slug only.
 
 = 3.1.2 =
 The most powerful capabilities (PHP exec, plugin install, raw SQL, admin-ajax) are now separate red opt-ins that auto-disable 30 minutes after you enable them. The GitHub self-updater is gone — WordPress serves updates.

@@ -1,12 +1,15 @@
 <?php
 /**
- * Database layer — generic, guarded access to custom plugin tables, so PressPilot can
- * configure plugins that store their data outside options/meta (WooCommerce, JetEngine,
- * form/LMS plugins, …). This is the reach that makes "any plugin" possible.
+ * Database read layer — structured, read-only access to plugin and core tables, so
+ * PressPilot can inspect data that plugins store outside options/meta (WooCommerce,
+ * JetEngine, form/LMS plugins, …) for reporting and discovery.
  *
- * Safety: reads are capped; writes support dry-run, cap the number of affected rows,
- * return the before-image of changed rows, and refuse WordPress core tables unless
- * force=true (use the typed /options, /meta, /content endpoints for those).
+ * This layer is READ-ONLY and never accepts raw SQL. Every query is assembled by the
+ * plugin from identifiers validated against `[A-Za-z0-9_]` and values bound through
+ * `$wpdb->prepare()`; the caller chooses a table, columns, equality filters, ordering
+ * and a capped row limit — never a SQL string. Writes go through the typed endpoints
+ * (/content, /options, /meta, /terms) which carry their own validation and restore
+ * points.
  *
  * @package PressPilot
  */
@@ -16,16 +19,6 @@ defined( 'ABSPATH' ) || exit;
 class PP_DB {
 
 	const MAX_ROWS = 500;
-
-	/** Core tables that must not be written through the raw layer (use typed endpoints). */
-	private static function core_tables() {
-		global $wpdb;
-		$core = array( 'options', 'posts', 'postmeta', 'users', 'usermeta', 'terms', 'termmeta',
-			'term_taxonomy', 'term_relationships', 'comments', 'commentmeta', 'links' );
-		return array_map( function ( $t ) use ( $wpdb ) {
-			return $wpdb->prefix . $t;
-		}, $core );
-	}
 
 	private static function table_exists( $table ) {
 		global $wpdb;
@@ -56,8 +49,6 @@ class PP_DB {
 	/** Column definitions for a table. */
 	public static function describe( $table ) {
 		if ( ! self::valid_ident( $table ) || ! self::table_exists( $table ) ) {
-			// allow full prefixed name too
-			global $wpdb;
 			if ( ! self::table_exists( $table ) ) {
 				return PP_Helpers::error( 'pp_no_table', 'Table not found.', 404 );
 			}
@@ -68,43 +59,29 @@ class PP_DB {
 	}
 
 	/**
-	 * Read rows. Either a structured query (table + equality where) or a validated
-	 * read-only raw SELECT.
+	 * Read rows with a structured, read-only query. No raw SQL: the caller supplies a
+	 * table, optional columns, equality filters, ordering and a capped limit, and the
+	 * query is built from validated identifiers with bound values.
 	 *
-	 * @param array $args { table, columns[], where{}, order, dir, limit, raw }
+	 * @param array $args { table, columns[], where{}, order, dir, limit }
 	 * @return array|WP_Error
 	 */
-	public static function select( $args ) {
+	public static function query( $args ) {
 		global $wpdb;
 		$limit = min( self::MAX_ROWS, max( 1, (int) ( isset( $args['limit'] ) ? $args['limit'] : 100 ) ) );
 
-		if ( ! empty( $args['raw'] ) ) {
-			if ( ! PP_Danger::enabled( 'raw_sql' ) ) {
-				return PP_Helpers::error( 'pp_raw_sql_disabled', 'Raw SQL SELECT is disabled. Enable the red "Allow raw SQL SELECT" toggle on the PressPilot Permissions screen (it auto-disables after 30 minutes). The structured form needs no opt-in.', 403 );
-			}
-			$sql = trim( (string) $args['raw'] );
-			if ( ! preg_match( '/^SELECT\b/i', $sql ) || false !== strpos( rtrim( $sql, ';' ), ';' ) ) {
-				return PP_Helpers::error( 'pp_bad_sql', 'raw must be a single read-only SELECT statement.', 400 );
-			}
-			$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- capability- and API-key-gated read-only SELECT, validated to a single statement; an arbitrary caller-supplied query that cannot be parameterised.
-			if ( null === $rows && $wpdb->last_error ) {
-				return PP_Helpers::error( 'pp_sql_error', $wpdb->last_error, 400 );
-			}
-			return array( 'rows' => array_slice( (array) $rows, 0, self::MAX_ROWS ), 'count' => count( (array) $rows ) );
-		}
-
 		$table = isset( $args['table'] ) ? (string) $args['table'] : '';
 		if ( ! self::table_exists( $table ) ) {
-			return PP_Helpers::error( 'pp_no_table', 'Provide an existing "table" (or a raw SELECT).', 400 );
+			return PP_Helpers::error( 'pp_no_table', 'Provide an existing "table".', 400 );
 		}
 		$cols = '*';
 		if ( ! empty( $args['columns'] ) && is_array( $args['columns'] ) ) {
 			$safe = array_filter( $args['columns'], array( __CLASS__, 'valid_ident' ) );
 			$cols = $safe ? '`' . implode( '`,`', $safe ) . '`' : '*';
 		}
-		$sql    = "SELECT $cols FROM `$table`";
-		$params = array();
-		$where  = isset( $args['where'] ) && is_array( $args['where'] ) ? $args['where'] : array();
+		$sql     = "SELECT $cols FROM `$table`";
+		$params  = array();
+		$where   = isset( $args['where'] ) && is_array( $args['where'] ) ? $args['where'] : array();
 		$clauses = array();
 		foreach ( $where as $col => $val ) {
 			if ( ! self::valid_ident( $col ) ) {
@@ -124,78 +101,12 @@ class PP_DB {
 			$dir  = ( isset( $args['dir'] ) && 'desc' === strtolower( $args['dir'] ) ) ? 'DESC' : 'ASC';
 			$sql .= " ORDER BY `{$args['order']}` $dir";
 		}
-		$sql .= ' LIMIT ' . (int) $limit;
+		$sql     .= ' LIMIT ' . (int) $limit;
 		$prepared = $params ? $wpdb->prepare( $sql, $params ) : $sql; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is assembled only from identifiers validated by valid_ident(); row values are bound via $params.
 		$rows     = $wpdb->get_results( $prepared, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $prepared is a $wpdb->prepare() result or a query built from valid_ident()-validated identifiers; not cached by design.
 		if ( null === $rows && $wpdb->last_error ) {
 			return PP_Helpers::error( 'pp_sql_error', $wpdb->last_error, 400 );
 		}
 		return array( 'table' => $table, 'rows' => (array) $rows, 'count' => count( (array) $rows ) );
-	}
-
-	/**
-	 * Write rows (insert / update / delete) with guardrails.
-	 *
-	 * @param array $args { op, table, data{}, where{}, dry_run, force, limit }
-	 * @return array|WP_Error
-	 */
-	public static function write( $args ) {
-		global $wpdb;
-		$op    = strtolower( isset( $args['op'] ) ? (string) $args['op'] : '' );
-		$table = isset( $args['table'] ) ? (string) $args['table'] : '';
-		$force = ! empty( $args['force'] );
-		$dry   = ! empty( $args['dry_run'] );
-		if ( ! in_array( $op, array( 'insert', 'update', 'delete' ), true ) ) {
-			return PP_Helpers::error( 'pp_bad_op', 'op must be insert|update|delete.', 400 );
-		}
-		if ( ! self::table_exists( $table ) ) {
-			return PP_Helpers::error( 'pp_no_table', 'Table not found.', 404 );
-		}
-		if ( ! $force && in_array( $table, self::core_tables(), true ) ) {
-			return PP_Helpers::error( 'pp_core_table', 'Refusing to write a WordPress core table via the raw DB layer — use /options, /meta or /content (or force:true).', 400 );
-		}
-		$data  = isset( $args['data'] ) && is_array( $args['data'] ) ? $args['data'] : array();
-		$where = isset( $args['where'] ) && is_array( $args['where'] ) ? $args['where'] : array();
-
-		if ( 'insert' === $op ) {
-			if ( empty( $data ) ) {
-				return PP_Helpers::error( 'pp_no_data', 'insert needs "data".', 400 );
-			}
-			if ( $dry ) {
-				return array( 'dry_run' => true, 'op' => 'insert', 'table' => $table, 'would_insert' => $data );
-			}
-			$ok = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- $wpdb->insert() escapes its values; writing a caller-chosen custom table is this layer's purpose.
-			if ( false === $ok ) {
-				return PP_Helpers::error( 'pp_insert_failed', $wpdb->last_error ?: 'insert failed', 400 );
-			}
-			return array( 'inserted' => 1, 'insert_id' => (int) $wpdb->insert_id, 'table' => $table );
-		}
-
-		// update / delete need a where clause; capture the before-image first.
-		if ( empty( $where ) ) {
-			return PP_Helpers::error( 'pp_no_where', $op . ' needs a "where" clause (refusing to touch the whole table).', 400 );
-		}
-		$before = self::select( array( 'table' => $table, 'where' => $where, 'limit' => self::MAX_ROWS ) );
-		$affected = is_array( $before ) && isset( $before['rows'] ) ? $before['rows'] : array();
-		$cap = min( self::MAX_ROWS, max( 1, (int) ( isset( $args['limit'] ) ? $args['limit'] : self::MAX_ROWS ) ) );
-		if ( count( $affected ) > $cap && ! $force ) {
-			return PP_Helpers::error( 'pp_too_many_rows', sprintf( 'Would affect %d rows (cap %d). Narrow the where, raise "limit", or force:true.', count( $affected ), $cap ), 400 );
-		}
-		if ( $dry ) {
-			return array( 'dry_run' => true, 'op' => $op, 'table' => $table, 'would_affect' => count( $affected ), 'rows' => $affected );
-		}
-
-		if ( 'update' === $op ) {
-			if ( empty( $data ) ) {
-				return PP_Helpers::error( 'pp_no_data', 'update needs "data".', 400 );
-			}
-			$n = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $wpdb->update() escapes its values; writing a caller-chosen custom table is this layer's purpose.
-		} else {
-			$n = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $wpdb->delete() escapes its values; deleting from a caller-chosen custom table is this layer's purpose.
-		}
-		if ( false === $n ) {
-			return PP_Helpers::error( 'pp_write_failed', $wpdb->last_error ?: 'write failed', 400 );
-		}
-		return array( 'op' => $op, 'table' => $table, 'affected' => (int) $n, 'before_image' => $affected );
 	}
 }
